@@ -16,7 +16,9 @@
     "presmoke": "node tools/copy-vendor.js",
     "smoke:term": "electron . --windowed --smoke=smoke-output --smoke-term",
     "smoke:games": "electron . --windowed --smoke=smoke-output --smoke-games",
-    "test:sudoku": "node tools/test-sudoku.js"
+    "test:sudoku": "node tools/test-sudoku.js",
+    "smoke:system": "electron . --windowed --smoke=smoke-output --smoke-system",
+    "test:calc": "node tools/test-calc.js"
   },
   "author": "H-os",
   "license": "MIT",

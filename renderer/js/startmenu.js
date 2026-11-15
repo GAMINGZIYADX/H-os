@@ -10,7 +10,7 @@ import { listApps, launchApp } from './appRegistry.js';
 import { getSetting, onSettingChange } from './settingsStore.js';
 import { showContextMenu } from './contextMenu.js';
 import { toast } from './notifications.js';
-import { emit } from './events.js';
+import { emit, on } from './events.js';
 import { shutDown, restart, sleep } from './power.js';
 
 let menu = null;
@@ -90,11 +90,16 @@ export async function initStartMenu() {
     if (open && e.key === 'Escape') closeStartMenu();
   });
 
-  // Show the real user name (first letter capitalised).
+  // The name shown: the one chosen in Settings, else your computer's user name (first letter capitalised).
+  let osName = 'Friend';
   try {
     const info = await window.hos.getInfo();
-    if (info.username) userNameEl.textContent = info.username.charAt(0).toUpperCase() + info.username.slice(1);
+    if (info.username) osName = info.username.charAt(0).toUpperCase() + info.username.slice(1);
   } catch { /* running outside Electron: keep "Friend" */ }
+  const showName = () => { userNameEl.textContent = getSetting('userName') || osName; };
+  showName();
+  onSettingChange((k) => { if (k === 'userName') showName(); });
+  on('panels:opening', closeStartMenu);
 }
 
 function appButton(app, className) {
@@ -201,6 +206,7 @@ export function openStartMenu() {
   open = true;
   searchInput.value = '';
   runSearch('');
+  emit('start:opened'); // flyout panels close themselves
   menu.inert = false;
   menu.classList.remove('is-closed');
   searchInput.focus();

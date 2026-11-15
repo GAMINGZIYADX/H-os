@@ -6,6 +6,8 @@
 //     cancelValue: 'no',          // what Esc / clicking outside answers
 //   });
 //
+// A button can also have  validate: () => 'message' | null  to refuse to close while something is wrong.
+//
 // Helpers: confirmDialog() -> true/false, alertDialog() -> waits for OK.
 // Enter presses the focused button (the primary one starts focused), Esc cancels,
 // Tab stays inside the dialog.
@@ -27,10 +29,17 @@ export function showDialog({ title, message = '', content = null, icon = 'tulip'
     if (message) dialog.append(el('p', 'dialog-message', message));
     if (content) dialog.append(content);
 
+    const errorLine = el('div', 'dialog-error');
+    dialog.append(errorLine);
     const actions = el('div', 'dialog-actions');
     const nodes = buttons.map((b) => {
       const btn = el('button', 'btn' + (b.primary ? ' btn-primary' : '') + (b.danger ? ' btn-danger' : ''), b.label);
-      btn.addEventListener('click', () => finish(b.value));
+      btn.addEventListener('click', () => {
+        // A button may have validate(): return a message to keep the dialog open and show it.
+        const problem = b.validate ? b.validate() : null;
+        if (problem) { errorLine.textContent = problem; return; }
+        finish(b.value);
+      });
       actions.append(btn);
       return btn;
     });

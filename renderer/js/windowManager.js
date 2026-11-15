@@ -234,6 +234,7 @@ export function openWindow(app, options = {}) {
   frame.addEventListener('animationend', () => frame.classList.remove('is-opening'), { once: true });
 
   focusWindow(win);
+  emit('sound:play', 'open');
 
   // ---- Let the app fill the body ----
   const ctx = {
@@ -597,6 +598,7 @@ export async function closeWindow(id) {
   }
 
   win.closing = true;
+  emit('sound:play', 'close');
   wins.delete(id);
   stack = stack.filter((w) => w !== win);
   win.el.classList.add('is-closing');

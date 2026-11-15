@@ -10,4 +10,5 @@ export function applyAppearance(settings) {
   if (settings.accent) root.dataset.accent = settings.accent;             // 'pink' | 'red' | 'yellow' | 'purple' | 'white'
   if (settings.wallpaper) root.dataset.wallpaper = settings.wallpaper;    // 'day' | 'dusk' | 'pastel'
   if (settings.taskbarAlign) root.dataset.taskbarAlign = settings.taskbarAlign; // 'center' | 'left'
+  if (Number.isFinite(settings.brightness)) root.style.setProperty('--dim', String(((100 - settings.brightness) / 100) * 0.75)); // 100 = bright, 40 = dim
 }

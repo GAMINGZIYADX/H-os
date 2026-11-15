@@ -27,6 +27,10 @@ const DEFAULTS = {
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false }, // File Explorer preferences
   sudoku: null,                                                        // game in progress (see sanitize)
   sudokuBest: { easy: null, medium: null, hard: null },                 // best times in seconds
+  volume: 70,                                                          // 0-100, system sounds
+  brightness: 100,                                                     // 40-100, the 'brightness' slider (a soft dimming overlay)
+  userName: '',                                                        // shown in the Start menu ('' = your computer's user name)
+  pin: null,                                                           // optional lock-screen PIN: { salt, hash } (never the PIN itself)
 };
 
 // Settings that may only be one of a few allowed words.
@@ -81,6 +85,14 @@ function sanitize(input) {
     for (const [k, allowed] of Object.entries(EXPLORER_ENUMS)) if (allowed.includes(e[k])) ex[k] = e[k];
     if (typeof e.showHidden === 'boolean') ex.showHidden = e.showHidden;
     out.explorer = { ...DEFAULTS.explorer, ...ex };
+  }
+
+  if (Number.isInteger(input.volume) && input.volume >= 0 && input.volume <= 100) out.volume = input.volume;
+  if (Number.isInteger(input.brightness) && input.brightness >= 40 && input.brightness <= 100) out.brightness = input.brightness;
+  if (typeof input.userName === 'string') out.userName = input.userName.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 30);
+  if (input.pin === null) out.pin = null;
+  else if (input.pin && typeof input.pin === 'object' && /^[0-9a-f]{32}$/.test(input.pin.salt) && /^[0-9a-f]{64}$/.test(input.pin.hash)) {
+    out.pin = { salt: input.pin.salt, hash: input.pin.hash };
   }
 
   // Sudoku: the game in progress (all strings of digits + bit masks, validated strictly).

@@ -1,17 +1,52 @@
-// notifications.js — little pop-up messages ("toasts") in the bottom-right corner.
+// notifications.js — pop-up messages ("toasts") plus the history shown in the notification center.
 //
 //   toast({ title: 'Saved', message: 'notes.txt is safe', icon: 'notepad' })
 //
-// Milestone 7 adds an action center that remembers them; for now they just
-// appear and fade away after a few seconds (click one to dismiss it).
+// Every toast pops up in the bottom-right corner for a few seconds (click to dismiss) AND is
+// remembered in the notification center (click the clock). "Do not disturb" (quick settings)
+// keeps the pop-ups and the chime away but still records them.
 
 import { el } from './dom.js';
 import { iconEl } from './icons.js';
+import { emit } from './events.js';
 
 const MAX_VISIBLE = 4;
+const MAX_HISTORY = 40;
 let container = null;
+let history = [];       // newest first: { id, title, message, icon, time, read }
+let nextId = 1;
+let doNotDisturb = false;
 
-export function toast({ title, message = '', icon = 'tulip', duration = 4500 }) {
+export const getHistory = () => history;
+export const unreadCount = () => history.filter((n) => !n.read).length;
+export const isDoNotDisturb = () => doNotDisturb;
+
+export function setDoNotDisturb(on) {
+  doNotDisturb = Boolean(on);
+  emit('notifications:changed');
+}
+export function markAllRead() {
+  history.forEach((n) => { n.read = true; });
+  emit('notifications:changed');
+}
+export function clearHistory() {
+  history = [];
+  emit('notifications:changed');
+}
+export function removeNotification(id) {
+  history = history.filter((n) => n.id !== id);
+  emit('notifications:changed');
+}
+
+// `sound`: play the notification chime? By default only for longer-lived messages (errors, info), not for
+// quick confirmations like "Copied".
+export function toast({ title, message = '', icon = 'tulip', duration = 4500, sound = duration > 3500 }) {
+  history.unshift({ id: nextId++, title, message, icon, time: Date.now(), read: false });
+  history = history.slice(0, MAX_HISTORY);
+  emit('notifications:changed');
+  if (doNotDisturb) return () => {};
+  if (sound) emit('sound:play', 'notify');
+
   if (!container) {
     container = el('div', 'toasts');
     container.setAttribute('aria-live', 'polite');

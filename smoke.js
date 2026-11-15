@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly, gamesOnly }) {
+exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly, gamesOnly, systemOnly }) {
   const wc = win.webContents;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const js = (code) => wc.executeJavaScript(code);
@@ -82,6 +82,7 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
       const els = [...document.querySelectorAll(${JSON.stringify(selector)})];
       const e = els.find((n) => n.textContent.includes(${JSON.stringify(text)}));
       if (!e) return null;
+      e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       const b = e.getBoundingClientRect();
       return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
     })()`);
@@ -126,6 +127,13 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
       if (termOnly) { // just the Terminal (run with HOS_NO_PTY=1 to test the pipe fallback)
         await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
         console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL TERMINAL CHECKS PASSED'}`);
+        require('electron').app.exit(failures ? 1 : 0);
+        return;
+      }
+
+      if (systemOnly) { // settings, panels, PIN, calculator, clock
+        await require('./smokeSystem').run({ js, check, snap, sleep, click, clickOn, key, type });
+        console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL SYSTEM CHECKS PASSED'}`);
         require('electron').app.exit(failures ? 1 : 0);
         return;
       }
@@ -183,11 +191,18 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
       check('click on empty desktop deselects', (await js(`document.querySelectorAll('.desk-icon.is-selected').length`)) === 0);
 
       // ---------------------------------------------------------------- 4. double click -> toast
-      const n = await center('.desk-icon[data-app-id="puzzles"]'); // (still a placeholder app)
+      const n = await center('.desk-icon[data-app-id="puzzles"]');
       await click(n.x, n.y);
       await click(n.x, n.y);
+      await sleep(600);
+      check('double-click opens the app in a window', (await js(`window.__hos.windows().length`)) === 1);
+      await snap('04-app-opened.png');
+      await js(`window.__hos.windows().forEach((w) => window.__hos.events.emit('window:close', w.id)); 0`);
       await sleep(500);
-      check('double-click opens app (toast shown)', (await js(`document.querySelectorAll('.toast').length`)) >= 1);
+      // the "still blooming" toast for unfinished apps is gone (every app exists now); a toast is still easy to trigger:
+      await js(`window.__hos.toast({ title: 'Hello', message: 'A test toast', duration: 4000 }); 0`);
+      await sleep(500);
+      check('toasts still pop up (and land in the notification history)', (await js(`document.querySelectorAll('.toast').length`)) >= 1);
       await snap('04-toast.png');
 
       // ---------------------------------------------------------------- 5. desktop context menu
@@ -394,8 +409,11 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
       // ---------------------------------------------------------------- 8e. PUZZLES: Sudoku + Chess (milestone 6)
       await require('./smokeGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
 
+      // ---------------------------------------------------------------- 8f. SETTINGS, PANELS, PIN, CALCULATOR, CLOCK (milestone 7)
+      await require('./smokeSystem').run({ js, check, snap, sleep, click, clickOn, key, type });
+
       // ---------------------------------------------------------------- 9. settings: dark + left + purple
-      await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left')`);
+      await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left'); window.__hos.settings.setSetting('wallpaper', 'dusk')`);
       await sleep(700);
       await clickOn('.start-btn');
       await sleep(700);

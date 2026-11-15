@@ -23,9 +23,13 @@ export const DEFAULTS = {
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false },
   sudoku: null,
   sudokuBest: { easy: null, medium: null, hard: null },
+  volume: 70,
+  brightness: 100,
+  userName: '',
+  pin: null,
 };
 
-const APPEARANCE_KEYS = ['theme', 'accent', 'wallpaper', 'taskbarAlign'];
+const APPEARANCE_KEYS = ['theme', 'accent', 'wallpaper', 'taskbarAlign', 'brightness'];
 
 let data = structuredClone(DEFAULTS);
 let pending = {};       // changes not yet written to disk

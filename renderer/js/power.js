@@ -77,6 +77,7 @@ export function showShutdownDialog() {
 export function shutDown() {
   if (shuttingDown) return;
   shuttingDown = true;
+  emit('sound:play', 'shutdown');
 
   const goodbye = el('div', 'goodbye');
   goodbye.append(createTulip('boot-logo'), el('h2', '', 'Time to rest your tulips'));

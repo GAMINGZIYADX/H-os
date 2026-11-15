@@ -240,3 +240,7 @@
 }
 .start-power:hover { background: var(--surface-hover); }
 .start-power .icon svg { display: block; width: 20px; height: 20px; }
+
+/* unread notification dot on the clock */
+.tb-clock { position: relative; }
+.tb-clock.has-unread::after { content: ''; position: absolute; top: 6px; left: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface-solid); }

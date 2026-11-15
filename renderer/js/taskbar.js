@@ -49,6 +49,8 @@ export function initTaskbar() {
   timeEl = el('div', 'tb-time');
   dateEl = el('div', 'tb-date');
   clock.append(timeEl, dateEl);
+  clock.title = 'Notifications and calendar';
+  clock.addEventListener('click', () => emit('notifications:toggle'));
 
   const showDesktop = el('button', 'tb-show-desktop');
   showDesktop.title = 'Show desktop';

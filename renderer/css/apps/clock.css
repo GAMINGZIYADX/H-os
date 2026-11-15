@@ -1,0 +1,45 @@
+/* Clock app */
+.ck { height: 100%; display: flex; flex-direction: column; }
+.ck-tabs { flex: none; display: flex; gap: 4px; padding: 10px 14px 0; border-bottom: 1px solid var(--divider); }
+.ck-tab { padding: 9px 18px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-muted); font: inherit; font-size: 13.5px; font-weight: 800; }
+.ck-tab:hover { color: var(--text); }
+.ck-tab.is-active { color: var(--accent); border-bottom-color: var(--accent); }
+.ck-body { flex: 1; min-height: 0; overflow-y: auto; }
+.ck-page { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 22px 24px; }
+
+.ck-face { width: min(300px, 100%); height: auto; filter: drop-shadow(0 6px 14px rgba(120, 40, 80, 0.2)); }
+.ck-rim { fill: var(--surface-solid); stroke: var(--accent-soft); stroke-width: 6; }
+.ck-tick { stroke: var(--text-muted); stroke-width: 1.5; }
+.ck-tick.big { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.ck-hand { stroke-linecap: round; }
+.ck-hand.hour { stroke: var(--text); stroke-width: 7; }
+.ck-hand.minute { stroke: var(--text); stroke-width: 5; }
+.ck-hand.second { stroke: var(--accent); stroke-width: 2.5; }
+.ck-pin { fill: var(--accent); }
+.ck-digital { font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ck-date { font-size: 15px; font-weight: 700; color: var(--text-muted); }
+.ck-zone { font-size: 12.5px; color: var(--text-muted); }
+
+.ck-ring-wrap { position: relative; width: min(240px, 100%); }
+.ck-ring { display: block; width: 100%; height: auto; }
+.ck-ring-track { stroke: var(--divider); }
+.ck-ring-bar { stroke: var(--accent); transition: stroke-dashoffset 250ms linear; }
+.ck-readout { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: center; }
+.ck-ring-wrap .ck-readout { position: absolute; inset: 0; display: grid; place-items: center; font-size: 34px; }
+.ck-readout.is-done { color: var(--accent); animation: ck-flash 700ms ease-in-out infinite alternate; }
+.ck-readout.big { font-size: 56px; margin: 18px 0 4px; }
+@keyframes ck-flash { to { opacity: 0.35; } }
+.ck-presets { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.ck-presets.is-disabled { opacity: 0.4; pointer-events: none; }
+.ck-chip { padding: 6px 12px; border: 1px solid var(--divider); border-radius: var(--radius-pill); background: var(--surface-solid); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 700; }
+.ck-chip:hover { background: var(--surface-hover); }
+.ck-custom { display: flex; gap: 10px; }
+.ck-field { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.ck-field input { width: 52px; padding: 6px 6px; border: 1px solid var(--divider); border-radius: var(--radius-md); background: var(--surface-solid); color: var(--text); font: inherit; text-align: center; }
+.ck-field input:disabled { opacity: 0.5; }
+.ck-buttons { display: flex; gap: 10px; }
+.ck-big { min-width: 100px; }
+.ck-laps { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 4px; }
+.ck-lap { display: flex; justify-content: space-between; padding: 8px 14px; border-radius: var(--radius-md); background: var(--surface-hover); font-size: 13px; font-variant-numeric: tabular-nums; }
+.ck-lap b { font-weight: 800; }
+.ck-lap-total { color: var(--text-muted); }

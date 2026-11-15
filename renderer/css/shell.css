@@ -32,6 +32,7 @@ button { font: inherit; color: inherit; }
   --z-windows: 100;    /* app windows live in 100..4999 (milestone 3) */
   --z-taskbar: 6000;
   --z-start: 6100;
+  --z-panel: 6150;
   --z-toast: 6200;
   --z-menu: 6300;
   --z-lock: 7000;
@@ -306,3 +307,56 @@ button { font: inherit; color: inherit; }
 
 /* dialog icons: centered, outline icons use the accent colour */
 .dialog span.dialog-icon { margin: 0 auto 6px; color: var(--accent); }
+
+/* The "brightness" slider: a soft dark veil over everything (clicks pass through it). */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9400;
+  background: #000;
+  opacity: var(--dim, 0);
+  pointer-events: none;
+  transition: opacity var(--dur) ease;
+}
+
+/* ---- lock screen PIN box ---- */
+.lock-pin {
+  position: absolute;
+  left: 50%;
+  bottom: 12vh;
+  width: min(320px, 86vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 22px 18px;
+  color: var(--text);
+  text-shadow: none;
+  cursor: default;
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: card-in 400ms var(--ease) both;
+}
+.lock-pin.is-shaking { animation: pin-shake 400ms ease both; }
+@keyframes pin-shake { 0%, 100% { transform: translateX(-50%); } 20% { transform: translateX(calc(-50% - 10px)); } 40% { transform: translateX(calc(-50% + 10px)); } 60% { transform: translateX(calc(-50% - 6px)); } 80% { transform: translateX(calc(-50% + 6px)); } }
+@keyframes card-in { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.lock-pin-avatar { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: var(--tulip-pink-light); }
+.lock-pin-avatar .tulip-icon { width: 28px; height: auto; }
+.lock-pin-input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--divider); border-radius: var(--radius-pill);
+  background: var(--surface-solid); color: var(--text); font: inherit; font-size: 18px; letter-spacing: 6px; text-align: center; outline: 0;
+}
+.lock-pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.lock-pin-message { min-height: 18px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); text-align: center; line-height: 1.4; }
+
+.dialog-error { min-height: 0; margin: -10px 0 12px; color: #d6313f; font-size: 12.5px; font-weight: 700; }
+.dialog-error:empty { display: none; }
+.dialog-field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px; text-align: left; font-size: 12.5px; font-weight: 700; }
+.dialog-field input { padding: 9px 12px; border: 1px solid var(--divider); border-radius: var(--radius-md); background: var(--surface-solid); color: var(--text); font: inherit; font-size: 15px; letter-spacing: 3px; user-select: text; }
+.dialog-field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }

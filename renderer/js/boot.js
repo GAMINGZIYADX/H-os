@@ -3,6 +3,7 @@
 // so callers can simply write:  await runBoot();
 
 import { createTulip } from './tulip.js';
+import { emit } from './events.js';
 
 const BOOT_MS = 2200;
 const MESSAGES = ['Waking up the tulips…', 'Watering the desktop…', 'Almost in bloom…'];
@@ -24,6 +25,7 @@ export function runBoot() {
     fill.style.transform = 'scaleX(0)';
     void boot.offsetWidth;
     boot.classList.add('is-running');
+    emit('sound:play', 'startup');
 
     const startTime = performance.now();
     let frame = 0;
