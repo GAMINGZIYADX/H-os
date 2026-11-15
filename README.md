@@ -65,7 +65,7 @@ Push a tag like `v1.0.0` to run it for a release.
 ## Tests
 
 ```bash
-npm run test:unit      # path-safety rules, sudoku generator, calculator (instant)
+npm run test:unit      # path-safety rules, text encodings, sudoku generator, calculator (instant)
 npm run smoke:fs       # the filesystem bridge against a sandbox folder
 npm run smoke          # drives the whole UI with real mouse and keyboard input (takes a few minutes)
 npm run smoke:term     # just the terminal (HOS_NO_PTY=1 tests the plain-pipe fallback)

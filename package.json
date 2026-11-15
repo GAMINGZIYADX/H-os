@@ -24,8 +24,8 @@
     "prestart": "node tools/copy-vendor.js",
     "predev": "node tools/copy-vendor.js",
     "presmoke": "node tools/copy-vendor.js",
-    "predist": "node tools/copy-vendor.js",
-    "predist:dir": "node tools/copy-vendor.js",
+    "predist": "node tools/copy-vendor.js && node tools/check-package-files.js",
+    "predist:dir": "node tools/copy-vendor.js && node tools/check-package-files.js",
     "smoke:exit": "electron . --windowed --smoke=smoke-output --smoke-exit",
     "test:encoding": "node tools/test-encoding.js"
   },
@@ -59,6 +59,7 @@
       "mainFsGuard.js",
       "mainIpc.js",
       "mainTerm.js",
+      "mainTextEncoding.js",
       "selftest.js",
       "renderer/**/*",
       "build/icon.png",
