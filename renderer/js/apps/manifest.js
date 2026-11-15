@@ -1,0 +1,25 @@
+// apps/manifest.js — the built-in apps, as plain descriptions.
+//
+// Right now these have no create() function (the apps aren't built yet), so
+// opening one shows a "still blooming" toast. As each app is written it calls
+// registerApp({...same id, create(){…}}) which replaces the entry here.
+
+import { registerApp } from '../appRegistry.js';
+
+const APPS = [
+  { id: 'explorer', name: 'File Explorer', icon: 'explorer', desktop: true, keywords: 'files folders this pc documents', defaultSize: { w: 920, h: 600 } },
+  { id: 'recycle', name: 'Recycle Bin', icon: 'recycle', desktop: true, keywords: 'trash deleted bin' },
+  { id: 'terminal', name: 'Terminal', icon: 'terminal', desktop: true, keywords: 'shell powershell bash command line', defaultSize: { w: 760, h: 460 } },
+  { id: 'puzzles', name: 'Puzzles', icon: 'puzzles', desktop: true, keywords: 'games sudoku chess play' },
+  { id: 'sudoku', name: 'Sudoku', icon: 'sudoku', keywords: 'puzzle numbers grid game' },
+  { id: 'chess', name: 'Chess', icon: 'chess', keywords: 'puzzle stockfish board game' },
+  { id: 'notepad', name: 'Notepad', icon: 'notepad', desktop: true, keywords: 'text edit write notes' },
+  { id: 'calculator', name: 'Calculator', icon: 'calculator', keywords: 'math numbers', defaultSize: { w: 340, h: 520 } },
+  { id: 'clock', name: 'Clock', icon: 'clock', keywords: 'timer alarm stopwatch time' },
+  { id: 'imageviewer', name: 'Image Viewer', icon: 'image', keywords: 'photos pictures png jpg' },
+  { id: 'settings', name: 'Settings', icon: 'settings', desktop: true, keywords: 'personalize theme wallpaper accent taskbar about' },
+];
+
+export function registerBuiltinApps() {
+  APPS.forEach(registerApp);
+}

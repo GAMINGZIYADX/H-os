@@ -29,7 +29,12 @@ button { font: inherit; color: inherit; }
 :root {
   --z-wallpaper: 0;
   --z-desktop: 10;
-  --z-lock: 5000;
+  --z-windows: 100;    /* app windows live in 100..4999 (milestone 3) */
+  --z-taskbar: 6000;
+  --z-start: 6100;
+  --z-toast: 6200;
+  --z-menu: 6300;
+  --z-lock: 7000;
   --z-boot: 8000;
   --z-dialog: 9000;
   --z-goodbye: 9500;
@@ -102,6 +107,9 @@ button { font: inherit; color: inherit; }
 .tulip-icon .petal-l { transform-origin: 50px 72px; transform: rotate(-9deg); }
 .tulip-icon .petal-r { transform-origin: 50px 72px; transform: rotate(9deg); }
 .tulip-icon .sparkle { display: none; }
+
+/* Replaying boot (Restart) fades in instead of cutting. */
+.boot.is-running { animation: fade-in-bg 300ms ease both; }
 
 /* Tulip bloom: pieces of the logo (see index.html) animate only while
    .is-running is on the boot element; removing/re-adding it replays everything. */
@@ -186,37 +194,6 @@ button { font: inherit; color: inherit; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
 /* ---------------------------------------------------------------------------
-   Desktop placeholder (replaced by the real desktop in milestone 2)
-   --------------------------------------------------------------------------- */
-.desktop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-desktop);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.desktop-card {
-  max-width: 420px;
-  padding: 26px 30px;
-  text-align: center;
-  background: var(--surface);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  animation: card-in 600ms var(--ease) both;
-}
-.desktop-card h1 { margin: 0 0 6px; font-size: 24px; font-weight: 800; }
-.desktop-card p { margin: 6px 0; color: var(--text-muted); line-height: 1.5; }
-.desktop-card kbd {
-  padding: 1px 7px; border-radius: var(--radius-sm); font-family: var(--font); font-weight: 700; font-size: 12px;
-  background: var(--surface-solid); border: 1px solid var(--divider); box-shadow: 0 1px 0 var(--divider); color: var(--text);
-}
-@keyframes card-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
-
-/* ---------------------------------------------------------------------------
    Dialog (shutdown question) — will be reused for other confirmations
    --------------------------------------------------------------------------- */
 .dialog-backdrop {
@@ -294,3 +271,29 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .lock-enter, .boot .boot-logo * { animation: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Sleep screen
+   --------------------------------------------------------------------------- */
+.sleep-screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-goodbye);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #0d0816;
+  color: rgba(255, 227, 240, 0.55);
+  animation: fade-in-bg 600ms ease both;
+  transition: opacity 400ms ease;
+}
+.sleep-screen.is-waking { opacity: 0; pointer-events: none; }
+.sleep-moon svg { width: 44px; height: 44px; }
+.sleep-text { margin: 0; font-size: 14px; font-weight: 600; }
+
+/* The shell (desktop + taskbar) slides in after you leave the lock screen. */
+.shell.is-entering .taskbar { animation: taskbar-up 480ms var(--ease) both; }
+.shell.is-entering .desktop { animation: fade-in-bg 600ms ease both; }
+@keyframes taskbar-up { from { transform: translateY(100%); } to { transform: none; } }

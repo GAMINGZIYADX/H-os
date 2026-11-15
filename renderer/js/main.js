@@ -1,34 +1,63 @@
-// main.js — the renderer's entry point. Runs the "session": boot -> lock -> desktop.
+// main.js — the renderer's entry point.
 //
-// Each screen lives in its own small module and returns a Promise, so the whole
-// startup reads top-to-bottom like a story (see startSession below).
+// A "session" is: boot -> lock screen -> the shell (desktop + taskbar + Start menu).
+// Restart replays it without quitting; Sleep replays just the lock screen.
 
-import { applyAppearance } from './appearance.js';
+import { loadSettings } from './settingsStore.js';
+import * as settingsStore from './settingsStore.js';
+import { registerBuiltinApps } from './apps/manifest.js';
 import { runBoot } from './boot.js';
 import { showLock } from './lock.js';
-import { initPower, showShutdownDialog } from './power.js';
-import { createTulip } from './tulip.js';
+import { initPower } from './power.js';
+import { initDesktop, layoutIcons } from './desktop.js';
+import { initTaskbar } from './taskbar.js';
+import { initStartMenu, closeStartMenu } from './startmenu.js';
+import { closeContextMenu } from './contextMenu.js';
+import * as events from './events.js';
 
-const desktop = document.getElementById('desktop');
+const shell = document.getElementById('shell');
 
-// Boot, then lock, then reveal the desktop.
+function showShell() {
+  shell.hidden = false;
+  shell.classList.remove('is-entering');
+  void shell.offsetWidth; // restart the slide-in animation
+  shell.classList.add('is-entering');
+  layoutIcons(); // icons can only be measured once the shell is visible
+}
+
+function hideShell() {
+  closeStartMenu();
+  closeContextMenu();
+  shell.hidden = true;
+}
+
 async function startSession() {
-  desktop.hidden = true;
+  hideShell();
   await runBoot();
   await showLock();
-  desktop.hidden = false;
+  showShell();
+}
+
+async function wakeFromSleep() {
+  hideShell();
+  await showLock();
+  showShell();
 }
 
 async function init() {
-  applyAppearance({}); // defaults for now; milestone 2 loads saved settings here
+  await loadSettings();           // theme, wallpaper, icon positions… from settings.json
+  registerBuiltinApps();          // must come before the pieces that list apps
   initPower();
+  initDesktop();
+  initTaskbar();
+  await initStartMenu();
 
-  document.getElementById('desktop-icon').appendChild(createTulip('tulip-icon'));
-  document.querySelector('#desktop-icon svg').style.width = '56px';
+  events.on('power:restart', startSession);
+  events.on('power:wake', wakeFromSleep);
 
-  // Temporary buttons on the welcome card (they move into the Start menu in milestone 2).
-  document.getElementById('btn-shutdown').addEventListener('click', showShutdownDialog);
-  document.getElementById('btn-restart').addEventListener('click', startSession);
+  // Development only (npm run dev): expose a few things so tests can poke at the shell.
+  const info = window.hos ? await window.hos.getInfo() : { windowed: true };
+  if (info.windowed) window.__hos = { events, settings: settingsStore };
 
   await startSession();
 }

@@ -1,0 +1,111 @@
+// =============================================================================
+// H-os — settings file (main process)
+// -----------------------------------------------------------------------------
+// All user settings live in ONE JSON file inside Electron's per-user data
+// folder (app.getPath('userData'), e.g. %APPDATA%\H-os\settings.json).
+//
+// The renderer can ask to load / save settings, but it never touches the file
+// itself. Everything it sends is checked by sanitize() below: unknown keys are
+// dropped and wrong types / out-of-range values are ignored, so a bug (or a
+// hand-edited file) can never put garbage in here.
+// =============================================================================
+
+const { app } = require('electron');
+const fs = require('fs');
+const path = require('path');
+
+// Keep in sync with DEFAULTS in renderer/js/settingsStore.js.
+const DEFAULTS = {
+  theme: 'light',
+  accent: 'pink',
+  wallpaper: 'day',
+  taskbarAlign: 'center',
+  sounds: true,
+  pinned: ['explorer', 'terminal', 'puzzles', 'notepad', 'settings'], // taskbar pins (app ids)
+  desktopIcons: {},                                                    // { appId: { col, row } }
+  recent: [],                                                          // [{ name, path, time }]
+};
+
+// Settings that may only be one of a few allowed words.
+const ENUMS = {
+  theme: ['light', 'dark'],
+  accent: ['pink', 'red', 'yellow', 'purple', 'white'],
+  wallpaper: ['day', 'dusk', 'pastel'],
+  taskbarAlign: ['center', 'left'],
+};
+
+const ID_PATTERN = /^[a-z0-9-]{1,40}$/; // app ids: lowercase letters, digits, dashes
+
+function settingsFile() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+// Returns a NEW object containing only the valid parts of `input`.
+function sanitize(input) {
+  const out = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+
+  for (const [key, allowed] of Object.entries(ENUMS)) {
+    if (allowed.includes(input[key])) out[key] = input[key];
+  }
+
+  if (typeof input.sounds === 'boolean') out.sounds = input.sounds;
+
+  if (Array.isArray(input.pinned)) {
+    out.pinned = input.pinned.filter((id) => typeof id === 'string' && ID_PATTERN.test(id)).slice(0, 30);
+  }
+
+  if (input.desktopIcons && typeof input.desktopIcons === 'object' && !Array.isArray(input.desktopIcons)) {
+    const icons = {};
+    for (const [id, pos] of Object.entries(input.desktopIcons).slice(0, 100)) {
+      const okCell = (n) => Number.isInteger(n) && n >= 0 && n <= 500;
+      if (ID_PATTERN.test(id) && pos && okCell(pos.col) && okCell(pos.row)) icons[id] = { col: pos.col, row: pos.row };
+    }
+    out.desktopIcons = icons;
+  }
+
+  if (Array.isArray(input.recent)) {
+    out.recent = input.recent
+      .filter((r) => r && typeof r.name === 'string' && typeof r.path === 'string' && r.name.length <= 260 && r.path.length <= 1024)
+      .slice(0, 12)
+      .map((r) => ({ name: r.name, path: r.path, time: Number.isFinite(r.time) ? r.time : Date.now() }));
+  }
+
+  return out;
+}
+
+let cache = null;
+
+function freshDefaults() {
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+
+// Read settings.json (once), falling back to defaults if it's missing or broken.
+function load() {
+  if (cache) return cache;
+  try {
+    const raw = JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
+    cache = { ...freshDefaults(), ...sanitize(raw) };
+  } catch {
+    cache = freshDefaults(); // first run, or unreadable file: start fresh
+  }
+  return cache;
+}
+
+// Merge a (sanitized) patch into the settings and write the file.
+function save(patch) {
+  cache = { ...load(), ...sanitize(patch) };
+  try {
+    const file = settingsFile();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    // Write to a temp file first, then rename: a crash can't leave half a file.
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(cache, null, 2));
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    console.log('[main] could not write settings:', err.message);
+  }
+  return cache;
+}
+
+module.exports = { load, save, sanitize };

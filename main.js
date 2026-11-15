@@ -13,19 +13,25 @@
 const { app, BrowserWindow, Menu, globalShortcut, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const mainSettings = require('./mainSettings');
 
 // ---- Command-line flags (for development / testing) -------------------------
 //   npm start                      -> real fullscreen H-os
 //   npm run dev                    -> windowed + resizable, with F12 devtools
-//   electron . --windowed --smoke=DIR -> windowed, takes screenshots into DIR, exits
+//   electron . --windowed --smoke=DIR -> windowed, runs smoke.js (plays with the UI using real
+//                                     mouse/keyboard events, saves screenshots into DIR, exits)
 const WINDOWED = process.argv.includes('--windowed');
-const smokeArg = process.argv.find((a) => a.startsWith('--smoke'));
+const smokeArg = process.argv.find((a) => a === '--smoke' || a.startsWith('--smoke='));
 const SMOKE = Boolean(smokeArg);
 const SMOKE_DIR = smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : path.join(__dirname, 'smoke-output');
 
 // The emergency exit keys. Works even if the renderer is frozen or crashed,
 // because it is handled here in the main process. You can never be trapped.
 const EMERGENCY_ACCELERATOR = 'CommandOrControl+Alt+Shift+Q';
+
+// Smoke tests use their own throw-away user-data folder, never your real settings.
+if (SMOKE) app.setPath('userData', path.join(SMOKE_DIR, 'userdata'));
 
 let mainWindow = null;
 
@@ -143,6 +149,10 @@ function forwardRendererLogs(win) {
   win.webContents.on('did-fail-load', (e, code, desc, url) => console.log('[main] LOAD FAILED:', code, desc, url));
 }
 
+function safeUsername() {
+  try { return os.userInfo().username; } catch { return 'friend'; }
+}
+
 // ---- IPC (requests from the renderer) --------------------------------------
 // Channel names are namespaced ("os:..."), later "fs:...", "shell:...", "term:...".
 function registerIpc() {
@@ -153,64 +163,17 @@ function registerIpc() {
     app.quit();
   });
 
+  // Settings: load everything / save a partial update (validated in mainSettings.js).
+  ipcMain.handle('settings:load', () => mainSettings.load());
+  ipcMain.handle('settings:save', (event, patch) => mainSettings.save(patch));
+
   ipcMain.handle('os:get-info', () => ({
     version: app.getVersion(),
+    username: safeUsername(),
     electron: process.versions.electron,
     platform: process.platform,
     windowed: WINDOWED,
   }));
-}
-
-// ---- Smoke test: screenshots + auto-exit (development helper) ---------------
-// Plays the whole flow by itself and saves screenshots so we can SEE the result
-// without sitting in front of the screen:
-//   boot -> lock (3 wallpapers) -> desktop -> Alt+F4 dialog (dark theme) -> goodbye -> quit.
-// The final quit must happen through the NORMAL shutdown path; if it doesn't,
-// the failsafe fires and the run is reported as failed.
-let quitViaShutdown = false;
-function runSmokeTest() {
-  fs.mkdirSync(SMOKE_DIR, { recursive: true });
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const js = (code) => mainWindow.webContents.executeJavaScript(code);
-  const snap = async (name) => {
-    // capturePage can hand back the PREVIOUS frame when the window is behind
-    // other windows, so grab one, wait a moment, and keep the second.
-    await mainWindow.webContents.capturePage();
-    await sleep(250);
-    const image = await mainWindow.webContents.capturePage();
-    fs.writeFileSync(path.join(SMOKE_DIR, name), image.toPNG());
-    console.log('[smoke] saved', name);
-  };
-
-  // If the normal shutdown path is broken we must not hang forever.
-  setTimeout(() => {
-    console.log('[smoke] FAILED: app did not quit by itself (shutdown path broken)');
-    emergencyExit();
-  }, 25000);
-
-  mainWindow.webContents.once('did-finish-load', async () => {
-    try {
-      await sleep(1300); await snap('1-boot.png');
-      await sleep(3300); await snap('2-lock-day.png');
-      await js("document.documentElement.dataset.wallpaper='dusk'");
-      await sleep(900);  await snap('3-lock-dusk.png');
-      await js("document.documentElement.dataset.wallpaper='pastel'");
-      await sleep(900);  await snap('4-lock-pastel.png');
-      await js("document.documentElement.dataset.wallpaper='day'");
-      await js("document.getElementById('lock').click()");
-      await sleep(1200); await snap('5-desktop.png');
-      await js("document.documentElement.dataset.theme='dark'; document.documentElement.dataset.wallpaper='dusk'");
-      requestShutdownDialog(); // same path Alt+F4 takes
-      await sleep(700);  await snap('6-shutdown-dialog-dark.png');
-      const fontOk = await js("document.fonts.check('700 16px Nunito')");
-      console.log('[smoke] Nunito font loaded:', fontOk);
-      await js("document.querySelector('[data-action=shutdown]').click()");
-      await sleep(1300); await snap('7-goodbye.png');
-      quitViaShutdown = true; // from here the app must quit on its own
-    } catch (err) {
-      console.log('[smoke] ERROR', err);
-    }
-  });
 }
 
 // ---- App lifecycle ----------------------------------------------------------
@@ -222,7 +185,16 @@ app.whenReady().then(() => {
   const ok = globalShortcut.register(EMERGENCY_ACCELERATOR, emergencyExit);
   if (!ok) console.log('[main] could not register emergency shortcut (the in-window backup still works)');
 
-  if (SMOKE) runSmokeTest();
+  if (SMOKE) {
+    require('./smoke').run({
+      win: mainWindow,
+      dir: SMOKE_DIR,
+      verify: process.argv.includes('--smoke-verify'), // 2nd run: check that settings survived
+      requestShutdownDialog,
+      emergencyExit,
+      settingsPath: () => path.join(app.getPath('userData'), 'settings.json'),
+    });
+  }
 });
 
 app.on('second-instance', () => {

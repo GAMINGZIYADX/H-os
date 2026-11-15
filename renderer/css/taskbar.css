@@ -1,0 +1,242 @@
+/* =============================================================================
+   taskbar.css — the taskbar and the Start menu
+   ============================================================================= */
+
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--taskbar-height);
+  z-index: var(--z-taskbar);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border-top: 1px solid var(--surface-border);
+}
+
+/* The Start button + apps sit in the middle (data-taskbar-align="center")
+   or hug the left edge (data-taskbar-align="left"). Both states animate. */
+.taskbar-center {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: left var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+:root[data-taskbar-align='left'] .taskbar-center { left: 8px; transform: translateX(0); }
+
+.tb-btn {
+  position: relative;
+  width: 44px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: default;
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease);
+}
+.tb-btn:hover { background: var(--surface-hover); }
+.tb-btn:active { background: var(--surface-pressed); transform: scale(0.92); }
+.tb-btn.is-active { background: var(--surface-hover); }
+.tb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-btn .icon { display: grid; place-items: center; }
+.tb-btn .icon svg { width: 26px; height: 26px; }
+.start-btn .tulip-icon { width: 24px; height: 30px; transition: transform var(--dur) var(--ease); }
+.start-btn:hover .tulip-icon { transform: translateY(-2px) scale(1.08); }
+
+/* the "this app is open" bar under a button */
+.tb-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  transform: translateX(-50%);
+  transition: width var(--dur) var(--ease), background var(--dur);
+}
+.tb-btn.is-running::after { width: 6px; }
+.tb-btn.is-active::after { width: 18px; background: var(--accent); }
+
+/* ---- Right side ---- */
+.taskbar-right { display: flex; align-items: center; height: 100%; }
+.tb-tray, .tb-clock {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  cursor: default;
+  transition: background var(--dur-fast);
+}
+.tb-tray:hover, .tb-clock:hover { background: var(--surface-hover); }
+.tb-tray { gap: 12px; padding: 0 12px; }
+.tb-tray .icon svg { display: block; width: 17px; height: 17px; }
+.tb-clock { flex-direction: column; justify-content: center; align-items: flex-end; padding: 0 10px; font-size: 12px; font-weight: 600; line-height: 1.25; }
+.tb-show-desktop {
+  align-self: stretch;
+  width: 9px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--divider);
+  background: transparent;
+  transition: background var(--dur-fast);
+}
+.tb-show-desktop:hover { background: var(--surface-hover); }
+
+/* =============================================================================
+   Start menu
+   ============================================================================= */
+.start-menu {
+  position: fixed;
+  z-index: var(--z-start);
+  left: 50%;
+  bottom: calc(var(--taskbar-height) + 12px);
+  width: min(620px, calc(100vw - 24px));
+  height: min(660px, calc(100vh - var(--taskbar-height) - 28px));
+  display: flex;
+  flex-direction: column;
+  padding: 22px 22px 0;
+  color: var(--text);
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, 0);
+  transition: transform var(--dur-slow) var(--ease), opacity var(--dur) ease, visibility 0s linear 0s;
+}
+.start-menu.is-closed {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 36px);
+  transition: transform var(--dur-slow) var(--ease), opacity var(--dur) ease, visibility 0s linear var(--dur-slow);
+}
+:root[data-taskbar-align='left'] .start-menu { left: 12px; transform: translate(0, 0); }
+:root[data-taskbar-align='left'] .start-menu.is-closed { transform: translate(0, 36px); }
+
+.start-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.start-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.start-search .icon svg { display: block; width: 18px; height: 18px; color: var(--text-muted); }
+.start-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  user-select: text;
+}
+.start-search input::placeholder { color: var(--text-muted); }
+
+.start-body { flex: 1; min-height: 0; margin-top: 8px; overflow-y: auto; padding-right: 4px; }
+.start-heading { margin: 14px 4px 8px; font-size: 13px; font-weight: 800; }
+
+.start-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.start-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 2px 8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: default;
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease);
+}
+.start-app:hover { background: var(--surface-hover); }
+.start-app:active { transform: scale(0.95); }
+.start-app .icon svg { display: block; width: 36px; height: 36px; }
+.start-app-name { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.15; }
+
+.start-recent { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.start-recent-item, .start-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+.start-recent-item:hover, .start-result:hover { background: var(--surface-hover); }
+.start-recent-item .icon svg { display: block; width: 24px; height: 24px; color: var(--accent); }
+.start-recent-text { display: flex; flex-direction: column; min-width: 0; }
+.start-recent-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.start-recent-time { font-size: 11.5px; color: var(--text-muted); }
+
+.start-results { display: flex; flex-direction: column; }
+.start-result .icon svg { display: block; width: 30px; height: 30px; }
+.start-result-name { flex: 1; font-size: 14px; font-weight: 700; }
+.start-result-type { font-size: 12px; color: var(--text-muted); }
+
+.start-empty { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 16px 10px; color: var(--text-muted); font-weight: 600; }
+.start-empty .tulip-icon { width: 28px; height: auto; opacity: 0.8; }
+
+.start-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -22px;
+  padding: 0 22px;
+  height: 64px;
+  border-top: 1px solid var(--divider);
+  background: color-mix(in srgb, var(--surface-solid) 40%, transparent);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+.start-user { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border-radius: var(--radius-md); font-weight: 700; }
+.start-user:hover { background: var(--surface-hover); }
+.start-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tulip-pink-light); }
+.start-avatar .tulip-icon { width: 18px; height: auto; }
+.start-power {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  cursor: default;
+}
+.start-power:hover { background: var(--surface-hover); }
+.start-power .icon svg { display: block; width: 20px; height: 20px; }
