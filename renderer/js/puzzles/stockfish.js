@@ -12,6 +12,7 @@ export class StockfishEngine {
     this.worker = new Worker(new URL('../../vendor/stockfish/stockfish.js', import.meta.url));
     this.listeners = new Set();
     this.search = null;       // the search in progress: { resolve, onInfo, cancelled }
+    this.generation = 0;      // counts think() calls, so only the newest one actually starts a search
     this.worker.onmessage = (event) => this.#onLine(String(event.data));
     this.worker.onerror = (event) => console.error('Stockfish worker error:', event.message);
     this.ready = this.#handshake();
@@ -65,8 +66,10 @@ export class StockfishEngine {
   // Think about a position. Resolves with the best move ("e2e4", "e7e8q") or null if cancelled.
   //   goArgs: "movetime 500" or "depth 14" or "infinite"
   async think(fen, goArgs, onInfo = null) {
+    const generation = ++this.generation;
     await this.ready;
     await this.stop(); // finish any previous search first
+    if (generation !== this.generation) return null; // a newer request arrived while we waited: it wins
     return new Promise((resolve) => {
       this.search = { resolve, onInfo, cancelled: false };
       this.#send('position fen ' + fen);

@@ -6,7 +6,7 @@
 // button if it is pinned (setting 'pinned') OR has an open window. The little
 // bar under a button means "running"; a longer pink bar means "focused".
 //
-// Running windows come from the window manager (milestone 3) as an event:
+// Running windows come from the window manager (windowManager.js) as an event:
 //   emit('windows:changed', [{ id, appId, title, focused, minimized }])
 // and clicks go back out as events ('window:toggle', 'window:close', 'desktop:show'),
 // so this file never needs to know how windows are implemented.
@@ -43,7 +43,7 @@ export function initTaskbar() {
   const tray = el('button', 'tb-tray');
   tray.title = 'Quick settings';
   tray.append(iconEl('wifi'), iconEl('volume'), iconEl('battery'));
-  tray.addEventListener('click', () => emit('quicksettings:toggle')); // panel arrives in milestone 7
+  tray.addEventListener('click', () => emit('quicksettings:toggle')); // panels.js shows the panel
 
   const clock = el('button', 'tb-clock');
   timeEl = el('div', 'tb-time');

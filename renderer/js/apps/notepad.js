@@ -19,7 +19,9 @@ import { addRecent } from '../settingsStore.js';
 import { baseName } from '../pathUtil.js';
 
 function create(container, ctx) {
-  const doc = { path: null, name: 'Untitled', saved: '', eol: 'lf' };
+  // `encoding` is how the file is stored on disk (detected when opening, written back the same way).
+  const doc = { path: null, name: 'Untitled', saved: '', eol: 'lf', encoding: 'utf8', encodingChanged: false };
+  const ENCODING_LABELS = { utf8: 'UTF-8', 'utf8-bom': 'UTF-8 with BOM', utf16le: 'UTF-16 LE', utf16be: 'UTF-16 BE', 'windows-1252': 'ANSI (Windows-1252)' };
   let wrap = true;
   let fontSize = 14;
   let destroyed = false;
@@ -47,7 +49,7 @@ function create(container, ctx) {
   root.append(menubar, findBar, area, statusbar);
   container.append(root);
 
-  const isDirty = () => area.value !== doc.saved;
+  const isDirty = () => area.value !== doc.saved || doc.encodingChanged;
 
   function refreshTitle() {
     ctx.setTitle(`${isDirty() ? '*' : ''}${doc.name} - Notepad`);
@@ -56,7 +58,7 @@ function create(container, ctx) {
     const before = area.value.slice(0, area.selectionStart).split('\n');
     sPos.textContent = `Ln ${before.length}, Col ${before[before.length - 1].length + 1}`;
     sLen.textContent = `${area.value.length.toLocaleString()} characters`;
-    sInfo.textContent = `${doc.eol === 'crlf' ? 'Windows (CRLF)' : 'Unix (LF)'}   UTF-8   ${Math.round((fontSize / 14) * 100)}%`;
+    sInfo.textContent = `${doc.eol === 'crlf' ? 'Windows (CRLF)' : 'Unix (LF)'}   ${ENCODING_LABELS[doc.encoding]}   ${Math.round((fontSize / 14) * 100)}%`;
   }
   function applyFormat() {
     area.wrap = wrap ? 'soft' : 'off';
@@ -85,7 +87,7 @@ function create(container, ctx) {
   }
 
   function setDocument(next, text) {
-    Object.assign(doc, next);
+    Object.assign(doc, { encoding: 'utf8', ...next, encodingChanged: false });
     doc.saved = text;
     area.value = text;
     area.setSelectionRange(0, 0);
@@ -103,7 +105,7 @@ function create(container, ctx) {
   async function loadPath(path) {
     try {
       const file = await fsApi.readText(path);
-      setDocument({ path: file.path, name: file.name, eol: file.eol }, file.text);
+      setDocument({ path: file.path, name: file.name, eol: file.eol, encoding: file.encoding }, file.text);
       addRecent({ name: file.name, path: file.path });
       area.focus();
       return true;
@@ -124,11 +126,13 @@ function create(container, ctx) {
   }
 
   async function writeTo(path) {
-    const res = await fsApi.writeText(path, area.value, doc.eol);
+    const res = await fsApi.writeText(path, area.value, doc.eol, doc.encoding);
     doc.path = res.path;
     doc.name = res.name;
     doc.saved = area.value;
+    doc.encodingChanged = false;
     refreshTitle();
+    refreshStatus();
     addRecent({ name: res.name, path: res.path });
     return true;
   }
@@ -241,6 +245,13 @@ function create(container, ctx) {
   ]);
   addMenu('Format', () => [
     { label: 'Word wrap', checked: wrap, onSelect: () => { wrap = !wrap; applyFormat(); } },
+    {
+      label: 'Encoding',
+      submenu: Object.entries(ENCODING_LABELS).map(([id, label]) => ({
+        label, checked: doc.encoding === id,
+        onSelect: () => { if (doc.encoding !== id) { doc.encoding = id; doc.encodingChanged = true; refreshTitle(); refreshStatus(); } },
+      })),
+    },
     { separator: true },
     { label: 'Larger text', onSelect: () => { fontSize = Math.min(40, fontSize + 2); applyFormat(); } },
     { label: 'Smaller text', onSelect: () => { fontSize = Math.max(9, fontSize - 2); applyFormat(); } },

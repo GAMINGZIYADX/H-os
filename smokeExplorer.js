@@ -178,11 +178,14 @@ exports.run = async function runExplorer(t) {
   check('explorer: typed path navigates', await waitFor(`document.querySelector('.win.is-focused .ex-crumbs').textContent.includes('folderA')`));
   await clickOn('.win.is-focused .ex-crumb', 'sandbox') || await clickOn('.win.is-focused .ex-crumb', path.basename(sandbox));
   await waitFor(`document.querySelector('.win.is-focused .ex-crumbs').lastChild.textContent.length > 0 && document.querySelectorAll('.win.is-focused .ex-item').length >= 5`);
+  await clickOn('.win.is-focused .ex-item', 'notes.txt');
+  await key('a', ['control']);
   await clickOn('.win.is-focused .ex-search input');
   await type('note');
   await sleep(300);
   n = await names();
   check('explorer: search filters the folder', n.length === 1 && n[0] === 'notes.txt', n.join(','));
+  check('explorer: items hidden by the search are no longer selected (Delete cannot hit them)', (await js(`document.querySelector('.win.is-focused .ex-status').textContent`)).includes('1 selected'));
   await key('Escape');
   await clickOn('.win.is-focused .ex-item', 'notes.txt');
   await clickOn('.win.is-focused .ex-cmd', 'Properties');

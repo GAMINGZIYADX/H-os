@@ -9,7 +9,7 @@
     "dev": "electron . --windowed",
     "dist": "electron-builder --win portable nsis --x64",
     "dist:dir": "electron-builder --dir",
-    "test:unit": "node tools/test-guard.js && node tools/test-sudoku.js && node tools/test-calc.js",
+    "test:unit": "node tools/test-guard.js && node tools/test-encoding.js && node tools/test-sudoku.js && node tools/test-calc.js",
     "test:guard": "node tools/test-guard.js",
     "test:sudoku": "node tools/test-sudoku.js",
     "test:calc": "node tools/test-calc.js",
@@ -26,7 +26,8 @@
     "presmoke": "node tools/copy-vendor.js",
     "predist": "node tools/copy-vendor.js",
     "predist:dir": "node tools/copy-vendor.js",
-    "smoke:exit": "electron . --windowed --smoke=smoke-output --smoke-exit"
+    "smoke:exit": "electron . --windowed --smoke=smoke-output --smoke-exit",
+    "test:encoding": "node tools/test-encoding.js"
   },
   "author": "H-os",
   "license": "MIT",
@@ -99,6 +100,12 @@
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
     },
-    "publish": null
+    "publish": null,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeCliInspectArguments": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "onlyLoadAppFromAsar": true
+    }
   }
 }

@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('hos', {
     conflicts: (sources, destDir) => ipcRenderer.invoke('fs:conflicts', sources, destDir),
     paste: (mode, sources, destDir, onConflict) => ipcRenderer.invoke('fs:paste', mode, sources, destDir, onConflict),
     readText: (p) => ipcRenderer.invoke('fs:read-text', p),
-    writeText: (p, text, eol) => ipcRenderer.invoke('fs:write-text', p, text, eol),
+    writeText: (p, text, eol, encoding) => ipcRenderer.invoke('fs:write-text', p, text, eol, encoding),
     readImage: (p) => ipcRenderer.invoke('fs:read-image', p),
   },
 

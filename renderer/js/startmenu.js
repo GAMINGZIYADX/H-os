@@ -128,9 +128,9 @@ function timeAgo(ms) {
 
 function openRecent(entry) {
   closeStartMenu();
-  // File apps (milestone 4) listen for this. If nobody does yet, say so nicely.
+  // main.js listens for this and opens the file. If nobody does, say so nicely.
   if (emit('file:open', entry) === 0) {
-    toast({ title: entry.name, message: 'Opening files arrives with File Explorer in milestone 4.', icon: 'explorer' });
+    toast({ title: entry.name, message: "H-os couldn't open that file.", icon: 'explorer' });
   }
 }
 

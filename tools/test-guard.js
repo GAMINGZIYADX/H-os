@@ -91,5 +91,20 @@ expect('linux: NUL byte rejected', throwsCode(() => lin.normalize('/tmp/a\0b'), 
 expect('linux: name with colon is fine, with slash is not', lin.validateName('a:b') === null && lin.validateName('a/b') !== null);
 expect('linux: case matters (/ETC is not /etc)', okLin('/ETC/x'));
 
+// ---------------------------------------------------------------- containers (where NEW things may be put)
+const containerWin = (p) => { try { win.assertContainer(p); return true; } catch { return false; } };
+const containerLin = (p) => { try { lin.assertContainer(p); return true; } catch { return false; } };
+expect('win: you can create things IN your home folder (even though it cannot be deleted)', containerWin('C:\\Users\\Tess') && protectedWin('C:\\Users\\Tess'));
+expect('win: you can create things in Documents / Desktop (but not delete them)', containerWin('C:\\Users\\Tess\\Documents') && containerWin('C:\\Users\\Tess\\Desktop') && protectedWin('C:\\Users\\Tess\\Documents'));
+expect('win: you can put things in the root of another drive (a USB stick)', containerWin('D:\\') && containerWin('E:\\Photos') && protectedWin('D:\\'));
+expect('win: C:\\Users is not a place to put things', !containerWin('C:\\Users'));
+expect('win: C:\\Windows and Program Files never receive things', !containerWin('C:\\Windows') && !containerWin('C:\\Windows\\System32') && !containerWin('C:\\Program Files'));
+expect('win: H-os user-data folder never receives things', !containerWin('C:\\Users\\Tess\\AppData\\Roaming\\H-os'));
+expect('win: AppData folders themselves cannot be renamed or deleted', protectedWin('C:\\Users\\Tess\\AppData') && protectedWin('C:\\Users\\Tess\\AppData\\Local') && protectedWin('C:\\Users\\Tess\\AppData\\Roaming'));
+expect('win: a folder inside Documents can be changed', okWin('C:\\Users\\Tess\\Documents\\Photos'));
+expect('win: reserved device names CONIN$ / COM¹ are refused', invalidWin('C:\\x\\CONIN$') && invalidWin('C:\\x\\COM¹') && win.validateName('LPT²') !== null);
+expect('linux: you can create things in your home folder and Documents', containerLin('/home/tess') && containerLin('/home/tess/Documents') && protectedLin('/home/tess') && protectedLin('/home/tess/Documents'));
+expect('linux: / and /home never receive things, nor /etc', !containerLin('/') && !containerLin('/home') && !containerLin('/etc/cron.d'));
+
 console.log(failed ? `\n${failed} FAILED` : '\nall guard tests passed');
 process.exit(failed ? 1 : 0);

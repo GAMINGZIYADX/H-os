@@ -105,4 +105,13 @@ exports.run = async function runTerminal(t) {
   const gone = await js(`hos.term.write(${keepSid}, 'x').then((r) => (r.ok ? 'STILL ALIVE' : r.error.code))`);
   check(`${tag}: closing the window ends its shell`, gone === 'GONE', gone);
   await js(`window.__hos.terminals.length = 0; 0`);
+
+  // closing a terminal WHILE it is still starting must not leave an invisible shell behind
+  await js(`window.__hos.launch('terminal'); 0`);
+  await sleep(20);
+  await closeAll();
+  await sleep(3500);
+  const leftovers = await js(`(async () => { const out = []; for (const t of window.__hos.terminals) { const r = await hos.term.write(t.info().sid, 'x'); out.push(r.ok); } return out; })()`);
+  check(`${tag}: closing a terminal while it is still starting leaves no shell running`, leftovers.length >= 1 && leftovers.every((alive) => alive === false), JSON.stringify(leftovers));
+  await js(`window.__hos.terminals.length = 0; 0`);
 };

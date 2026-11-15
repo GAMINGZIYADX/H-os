@@ -213,6 +213,40 @@ exports.run = async function runSystem(t) {
   await snap('76-calculator.png');
   await closeAll();
 
+  // ===================================================================== Unsaved work survives Shut down / Restart
+  await js(`window.__hos.launch('notepad'); 0`);
+  await waitFor(`!!document.querySelector('.win.is-focused .np-area')`);
+  await clickOn('.win.is-focused .np-area');
+  await type('unsaved words');
+  const powerAction = async (label) => {
+    await clickOn('.start-btn');
+    await sleep(500);
+    await clickOn('.start-power');
+    await sleep(250);
+    await clickOn('.ctx-item', label);
+  };
+  await powerAction('Shut down');
+  check('shut down asks about unsaved Notepad text first', await waitFor(`!!document.querySelector('.dialog') && document.querySelector('.dialog').textContent.includes('Save changes')`));
+  await snap('79-unsaved-shutdown.png');
+  await clickOn('.dialog .btn', 'Cancel');
+  await sleep(600);
+  check('cancelling keeps H-os running with the text still there', (await js(`!document.querySelector('.goodbye') && document.querySelector('.win .np-area').value === 'unsaved words'`)));
+  await powerAction('Restart');
+  check('restart asks about unsaved Notepad text too', await waitFor(`!!document.querySelector('.dialog') && document.querySelector('.dialog').textContent.includes('Save changes')`));
+  await clickOn('.dialog .btn', 'Cancel');
+  await sleep(600);
+  check('cancelling the restart keeps the window and the shell', (await js(`window.__hos.windows().length`)) === 1 && (await js(`document.getElementById('boot').hidden`)));
+  await powerAction('Restart');
+  await waitFor(`!!document.querySelector('.dialog')`);
+  await clickOn('.dialog .btn', "Don't save");
+  check("choosing Don't save lets the restart go ahead", await waitFor(`!document.getElementById('boot').hidden`, 4000));
+  await sleep(900);
+  await key('Space');
+  await sleep(1000);
+  await click(640, 300);
+  await sleep(1500);
+  check('after the restart the shell is back with no windows', (await js(`!document.getElementById('shell').hidden && window.__hos.windows().length === 0`)));
+
   // ===================================================================== Clock
   await js(`window.__hos.launch('clock'); 0`);
   check('clock: shows an analog face and a digital time', await waitFor(`!!document.querySelector('.win.is-focused .ck-face') && /\\d/.test(document.querySelector('.win.is-focused .ck-digital').textContent)`));

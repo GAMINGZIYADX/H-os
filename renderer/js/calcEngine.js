@@ -88,8 +88,11 @@ export function createCalc() {
     percent() {
       if (s.error) return;
       guard(() => {
+        // With + or -, "x %" means that percentage OF the number so far (200 + 10% = 220).
+        // With × or ÷ it simply means x / 100 (50 × 10% = 5), like the Windows calculator.
+        const multiplicative = s.op === '*' || s.op === '/';
         const base = s.acc !== null && s.op ? s.acc : 0;
-        const result = (base * value()) / 100;
+        const result = multiplicative ? value() / 100 : (base * value()) / 100;
         s.entry = fmt(result);
         s.awaiting = false;
       });

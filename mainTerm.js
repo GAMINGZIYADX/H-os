@@ -115,7 +115,10 @@ function register() {
 
     sessions.set(id, session);
     // If the window that owns this terminal goes away, end the shell.
-    sender.once('destroyed', () => kill(id));
+    const onDestroyed = () => kill(id);
+    session.onDestroyed = onDestroyed;
+    session.sender = sender;
+    sender.once('destroyed', onDestroyed);
     return { id, mode: session.mode, shell: path.basename(file), cwd, greeted: Boolean(greeted) };
   });
 
@@ -159,6 +162,7 @@ function kill(id) {
   if (!s) return;
   sessions.delete(id);
   if (s.flushTimer) clearTimeout(s.flushTimer);
+  if (s.onDestroyed && s.sender && !s.sender.isDestroyed()) s.sender.removeListener('destroyed', s.onDestroyed);
   try {
     s.proc.kill();
   } catch { /* already gone */ }

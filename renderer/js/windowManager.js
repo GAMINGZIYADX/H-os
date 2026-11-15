@@ -252,7 +252,16 @@ export function openWindow(app, options = {}) {
   try {
     const made = app.create(body, ctx);
     Promise.resolve(made)
-      .then((instance) => { win.instance = instance || null; notify(win); })
+      .then((instance) => {
+        // The window may have been closed while the app was still starting (e.g. Terminal spawning a shell):
+        // then nobody else will ever call destroy(), so do it now.
+        if (win.destroyed) {
+          try { if (instance && instance.destroy) instance.destroy(); } catch (err) { console.error('destroy failed:', err); }
+          return;
+        }
+        win.instance = instance || null;
+        notify(win);
+      })
       .catch((err) => showAppError(win, err));
   } catch (err) {
     showAppError(win, err);
@@ -589,12 +598,17 @@ export async function closeWindow(id) {
   if (!win || win.closing) return;
 
   // An app can say "wait, unsaved changes!" by returning false from canClose().
+  if (win.askingToClose) return; // a "Save changes?" question is already open for this window
   if (win.instance && win.instance.canClose) {
+    win.askingToClose = true;
     try {
       if (!(await win.instance.canClose())) return;
     } catch (err) {
       console.error('canClose failed:', err);
+    } finally {
+      win.askingToClose = false;
     }
+    if (win.closing || win.destroyed) return;
   }
 
   win.closing = true;
@@ -610,12 +624,30 @@ export async function closeWindow(id) {
 }
 
 function destroyWindow(win) {
+  if (win.destroyed) return;
+  win.destroyed = true;
   try {
     if (win.instance && win.instance.destroy) win.instance.destroy();
   } catch (err) {
     console.error('destroy failed:', err);
   }
   win.el.remove();
+}
+
+// Shut down / Restart: ask every window whether it is OK to close (Notepad: "Save changes?").
+// Returns false if anyone said "wait", in which case nothing should be closed.
+export async function confirmCloseAll() {
+  for (const win of [...stack].reverse()) {
+    if (win.closing || !win.instance || !win.instance.canClose) continue;
+    if (win.minimized) restoreFromMinimized(win);
+    else focusWindow(win); // bring the asking window to the front so you can see which one it is
+    try {
+      if (!(await win.instance.canClose())) return false;
+    } catch (err) {
+      console.error('canClose failed:', err);
+    }
+  }
+  return true;
 }
 
 // Restart: remove every window immediately (no animation).

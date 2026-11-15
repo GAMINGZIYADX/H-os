@@ -17,6 +17,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { createGuard, GuardError } = require('./mainFsGuard');
 const { makeHandle } = require('./mainIpc');
+const { decodeText, encodeText, hasUtf16Bom, ENCODINGS } = require('./mainTextEncoding');
 
 // ---- Limits (keep the app responsive and memory-safe) ----
 const MAX_ENTRIES = 5000;            // entries returned for one folder
@@ -49,7 +50,7 @@ class FsError extends Error {
 }
 
 function toError(err) {
-  if (err instanceof GuardError || err instanceof FsError) return { code: err.code, message: err.message };
+  if (err instanceof GuardError || err instanceof FsError || (err && err.code === 'ENCODING')) return { code: err.code, message: err.message };
   const messages = {
     ENOENT: 'That item no longer exists.',
     EPERM: "Windows won't let H-os do that (permission denied).",
@@ -64,6 +65,7 @@ function toError(err) {
     ENAMETOOLONG: 'That path is too long.',
     EROFS: 'That drive is read-only.',
     EXDEV: 'That item cannot be moved between drives this way.',
+    ENCODING: "That text can't be saved in this file's format.",
   };
   const code = err && err.code;
   if (code && messages[code]) return { code, message: messages[code] };
@@ -116,6 +118,15 @@ function register({ extraProtectedTrees = [] } = {}) {
     const typed = guard.assertMutable(input);
     const real = await realOf(typed);
     guard.assertMutable(real);
+    return { typed, real };
+  }
+
+  // A folder that is about to RECEIVE new items (new folder, paste). Looser than mutable(): your home
+  // folder, Documents and a drive's root can receive things even though they can't be deleted.
+  async function container(input) {
+    const typed = guard.assertContainer(input);
+    const real = await realOf(typed);
+    guard.assertContainer(real);
     return { typed, real };
   }
 
@@ -212,9 +223,12 @@ function register({ extraProtectedTrees = [] } = {}) {
   handle('fs:stat', async (p) => {
     const n = guard.normalize(p);
     const st = await fsp.lstat(n);
+    const link = st.isSymbolicLink();
+    let shown = st; // for a link, describe what it points to (a junction is a folder, not a 'link file')
+    if (link) { try { shown = await fsp.stat(n); } catch { /* broken link: describe the link itself */ } }
     return {
-      path: n, name: P.basename(n) || n, isDir: st.isDirectory(), isSymlink: st.isSymbolicLink(),
-      size: st.isFile() ? st.size : null, created: st.birthtimeMs, modified: st.mtimeMs, accessed: st.atimeMs,
+      path: n, name: P.basename(n) || n, isDir: shown.isDirectory(), isSymlink: link,
+      size: shown.isFile() ? shown.size : null, created: st.birthtimeMs, modified: st.mtimeMs, accessed: st.atimeMs,
       readOnly: (st.mode & 0o200) === 0,
       protected: guard.isProtected(n),
     };
@@ -247,7 +261,7 @@ function register({ extraProtectedTrees = [] } = {}) {
   handle('fs:mkdir', async (parent, name) => {
     const nameError = guard.validateName(name);
     if (nameError) throw new GuardError('BADNAME', nameError);
-    const { typed } = await mutable(parent);
+    const { typed } = await container(parent);
     const target = P.join(typed, name);
     const { typed: t2 } = await mutable(target);
     if (await exists(t2)) throw new FsError('EEXIST', 'Something with that name already exists.');
@@ -285,7 +299,7 @@ function register({ extraProtectedTrees = [] } = {}) {
     pathList(sources);
     if (!['replace', 'keepBoth', 'skip', undefined, null].includes(onConflict)) throw bad();
 
-    const dest = await mutable(destDir);
+    const dest = await container(destDir);
     const destStat = await fsp.stat(dest.real);
     if (!destStat.isDirectory()) throw new FsError('ENOTDIR', 'That is not a folder.');
 
@@ -301,7 +315,9 @@ function register({ extraProtectedTrees = [] } = {}) {
         if (srcStat.isDirectory() && guard.isInside(dest.real, src.real)) {
           throw new FsError('INVALID', `"${label}" can't be put inside itself.`);
         }
-        const sameFolder = guard.key(P.dirname(src.typed)) === guard.key(dest.typed);
+        // Same folder? Compare REAL locations of the parent folders (a junction can make two names for one folder).
+        const srcParentReal = await realOf(P.dirname(src.typed));
+        const sameFolder = guard.key(srcParentReal) === guard.key(dest.real);
         if (mode === 'move' && sameFolder) { result.skipped.push(label); continue; } // already there
 
         let targetName = label;
@@ -314,7 +330,12 @@ function register({ extraProtectedTrees = [] } = {}) {
           } else if (onConflict === 'skip') {
             result.skipped.push(label); continue;
           } else if (onConflict === 'replace') {
-            await mutable(target);
+            const targetPaths = await mutable(target);
+            // Never bin the item we are in the middle of moving (e.g. moving a/Photos/Photos into a/ and
+            // choosing Replace would otherwise send its own parent, source included, to the Recycle Bin).
+            if (guard.isInside(src.real, targetPaths.real) || guard.isInside(targetPaths.real, src.real)) {
+              throw new FsError('INVALID', `"${label}" and the item it would replace are the same place or contain each other.`);
+            }
             await shell.trashItem(target);               // the old item goes to the Recycle Bin, never lost
           } else {
             throw new FsError('EEXIST', `"${label}" already exists in the destination.`);
@@ -371,17 +392,19 @@ function register({ extraProtectedTrees = [] } = {}) {
     if (!st.isFile()) throw new FsError('EISDIR', 'That is not a file.');
     if (st.size > MAX_TEXT_BYTES) throw new FsError('TOOBIG', 'That file is too big for Notepad (5 MB limit).');
     const buf = await fsp.readFile(n);
-    if (buf.subarray(0, 8000).includes(0)) throw new FsError('NOTTEXT', "That doesn't look like a text file.");
-    let text = buf.toString('utf8');
-    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // strip a UTF-8 byte-order mark
+    if (!hasUtf16Bom(buf) && buf.subarray(0, 8000).includes(0)) throw new FsError('NOTTEXT', "That doesn't look like a text file.");
+    // Detect the encoding (UTF-8, UTF-8 with BOM, UTF-16, or old Windows ANSI) so saving never damages the file.
+    const { text: decoded, encoding } = decodeText(buf);
+    const text = decoded;
     const crlf = (text.match(/\r\n/g) || []).length;
     const lf = (text.match(/(?<!\r)\n/g) || []).length;
     const eol = crlf > lf ? 'crlf' : 'lf';
-    return { path: n, name: P.basename(n), text: text.replace(/\r\n/g, '\n'), eol, size: st.size, mtime: st.mtimeMs };
+    return { path: n, name: P.basename(n), text: text.replace(/\r\n/g, '\n'), eol, encoding, size: st.size, mtime: st.mtimeMs };
   });
 
-  handle('fs:write-text', async (p, text, eol) => {
+  handle('fs:write-text', async (p, text, eol, encoding = 'utf8') => {
     if (typeof text !== 'string') throw bad();
+    if (!ENCODINGS.includes(encoding)) throw bad();
     if (Buffer.byteLength(text) > MAX_WRITE_BYTES) throw new FsError('TOOBIG', 'That text is too big to save (10 MB limit).');
     const { typed } = await mutable(p);
     const nameError = guard.validateName(P.basename(typed));
@@ -391,10 +414,10 @@ function register({ extraProtectedTrees = [] } = {}) {
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
     }
-    const out = eol === 'crlf' ? text.replace(/\n/g, '\r\n') : text;
+    const out = encodeText(eol === 'crlf' ? text.replace(/\n/g, '\r\n') : text, encoding); // may refuse (ENCODING) rather than damage text
     const tmp = P.join(P.dirname(typed), `.${P.basename(typed)}.h-os-saving`);
     await mutable(tmp);
-    await fsp.writeFile(tmp, out, 'utf8');
+    await fsp.writeFile(tmp, out);
     try {
       await fsp.rename(tmp, typed);       // atomic replace: a crash can't leave a half-written file
     } catch (err) {

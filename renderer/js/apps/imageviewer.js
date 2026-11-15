@@ -22,6 +22,7 @@ function create(container, ctx) {
     url: null, nat: { w: 0, h: 0 }, size: 0,
     mode: 'fit',          // 'fit' or 'free'
     scale: 1, x: 0, y: 0, // image position/scale when free
+    loadToken: 0,         // bumped for every picture request (see show())
     destroyed: false,
   };
 
@@ -129,21 +130,25 @@ function create(container, ctx) {
   }
 
   async function show(path, { keepSiblings = false } = {}) {
+    const token = ++v.loadToken; // only the newest request may change the screen
+    let url = null;
     try {
       const file = await fsApi.readImage(path);
-      if (v.destroyed) return;
-      const blob = new Blob([file.data], { type: file.mime });
-      const url = URL.createObjectURL(blob);
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("That picture is damaged or isn't supported."));
-        img.src = url;
-      });
+      if (v.destroyed || token !== v.loadToken) return;
+      url = URL.createObjectURL(new Blob([file.data], { type: file.mime }));
+      // Decode on a throw-away <img> first, so a slow or broken picture never disturbs the one on screen.
+      const probe = new Image();
+      probe.src = url;
+      try { await probe.decode(); } catch { throw new Error("That picture is damaged or isn't supported."); }
+      if (v.destroyed || token !== v.loadToken) { URL.revokeObjectURL(url); return; }
+
       if (v.url) URL.revokeObjectURL(v.url);
       v.url = url;
+      url = null; // ownership moved to v.url
+      img.src = v.url;
       v.path = file.path;
       v.size = file.size;
-      v.nat = { w: img.naturalWidth || 300, h: img.naturalHeight || 300 };
+      v.nat = { w: probe.naturalWidth || 300, h: probe.naturalHeight || 300 };
       img.style.width = v.nat.w + 'px';
       img.style.height = v.nat.h + 'px';
       img.hidden = false;
@@ -155,7 +160,8 @@ function create(container, ctx) {
       if (!keepSiblings) await loadSiblings(file.path);
       paint();
     } catch (err) {
-      toast({ title: `Couldn't open ${baseName(path)}`, message: err.message, icon: 'image', duration: 6000 });
+      if (url) URL.revokeObjectURL(url);
+      if (token === v.loadToken) toast({ title: `Couldn't open ${baseName(path)}`, message: err.message, icon: 'image', duration: 6000 });
     }
   }
 

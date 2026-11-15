@@ -13,10 +13,12 @@ import { iconEl } from './icons.js';
 import { createTulip } from './tulip.js';
 import { emit } from './events.js';
 import { flushSettings } from './settingsStore.js';
+import { confirmCloseAll } from './windowManager.js';
 
 let dialogOpen = false;
 let shuttingDown = false;
 let sleeping = false;
+let askingToClose = false; // a "Save changes?" question from a window is open
 
 // Call once at startup: listens for Alt+F4 / window-close requests from main.js.
 export function initPower() {
@@ -74,8 +76,13 @@ export function showShutdownDialog() {
 }
 
 // Plays the goodbye animation, saves settings, then really quits.
-export function shutDown() {
-  if (shuttingDown) return;
+export async function shutDown() {
+  if (shuttingDown || askingToClose) return;
+  // Give every window the chance to say "wait, unsaved changes!" before anything is closed.
+  askingToClose = true;
+  const okToClose = await confirmCloseAll();
+  askingToClose = false;
+  if (!okToClose) return;
   shuttingDown = true;
   emit('sound:play', 'shutdown');
 
@@ -91,9 +98,12 @@ export function shutDown() {
 }
 
 // Restart: same as a fresh start, but without leaving the app.
-export function restart() {
-  if (shuttingDown) return;
-  emit('power:restart');
+export async function restart() {
+  if (shuttingDown || askingToClose) return;
+  askingToClose = true;
+  const okToClose = await confirmCloseAll();
+  askingToClose = false;
+  if (okToClose) emit('power:restart');
 }
 
 // Sleep: black screen; any click or key wakes up to the lock screen.

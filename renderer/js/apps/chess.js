@@ -483,7 +483,12 @@ async function create(container, ctx) {
   async function newGame(skipConfirm = false) {
     if (!skipConfirm && livePly() > 0 && !isOver()) {
       const ok = await confirmDialog({ title: 'Start a new game?', message: 'The current game will be lost. (You can save it as a PGN first.)', icon: 'chess', confirmLabel: 'New game', danger: true });
-      if (!ok) return;
+      if (!ok) { // cancelled: put the controls back to match the game that is still being played
+        modeSel.value = S.mode;
+        colorSel.value = S.colorChoice;
+        levelInput.value = String(S.level);
+        return;
+      }
     }
     S.token++;
     if (S.engine) S.engine.stop();

@@ -88,7 +88,6 @@ async function create(container, ctx) {
   if (mode === 'pipe') {
     term.write('\x1b[33m(Basic mode: no pseudo-terminal is available, so line editing is simple.)\x1b[0m\r\n');
   }
-  if (destroyed) { window.hos.term.kill(sid); return {}; }
 
   subscriptions.push(window.hos.term.onData((id, data) => { if (id === sid) { term.write(data); notePipeOutput(); } }));
   subscriptions.push(window.hos.term.onExit((id, code) => {

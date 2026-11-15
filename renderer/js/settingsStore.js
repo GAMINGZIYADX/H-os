@@ -78,7 +78,7 @@ export async function flushSettings() {
 }
 
 // Remember a file the user opened (shown under "Recommended" in the Start menu).
-// File apps call this in milestone 4.
+// File apps (Explorer, Notepad, Image Viewer) call this.
 export function addRecent({ name, path }) {
   const rest = data.recent.filter((r) => r.path !== path);
   setSetting('recent', [{ name, path, time: Date.now() }, ...rest].slice(0, 12));

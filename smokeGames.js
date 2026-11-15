@@ -182,6 +182,13 @@ exports.run = async function runGames(t) {
   await sleep(300);
   check('chess: Take back against the computer undoes a full move pair', (await chess(`game.history().length`)) === 2 && (await chess(`game.turn()`)) === 'w');
 
+  // changing the mode mid-game asks first; cancelling puts the dropdown back
+  await js(`(() => { const s = document.querySelector('.win.is-focused .ch-select'); s.value = 'two'; s.dispatchEvent(new Event('change')); })()`);
+  check('chess: changing the mode mid-game asks first', await waitFor(`!!document.querySelector('.dialog')`));
+  await clickOn('.dialog .btn', 'Cancel');
+  await sleep(300);
+  check('chess: cancelling puts the mode dropdown back to match the game', (await js(`document.querySelector('.win.is-focused .ch-select').value`)) === 'ai' && (await chess(`S.mode`)) === 'ai');
+
   // flip
   await key('f');
   check('chess: F flips the board (a8 is bottom-right... h1 top-left)', (await js(`document.querySelector('.win.is-focused .ch-board').firstElementChild.dataset.sq`)) === 'h1');

@@ -1,6 +1,6 @@
 /* =============================================================================
    shell.css — the "screens" of H-os: wallpaper, boot, lock, desktop
-   placeholder, shutdown dialog and goodbye. (Taskbar etc. arrive in milestone 2.)
+   shutdown dialog, goodbye and sleep. (Desktop, taskbar and menus have their own files.)
    Only uses variables from theme.css, so recoloring happens there.
    ============================================================================= */
 
@@ -29,7 +29,7 @@ button { font: inherit; color: inherit; }
 :root {
   --z-wallpaper: 0;
   --z-desktop: 10;
-  --z-windows: 100;    /* app windows live in 100..4999 (milestone 3) */
+  --z-windows: 100;    /* app windows live in 100..4999 */
   --z-taskbar: 6000;
   --z-start: 6100;
   --z-panel: 6150;

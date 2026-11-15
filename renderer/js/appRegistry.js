@@ -13,8 +13,8 @@
 //   }
 //
 // The registry does NOT know how windows work. When something wants to open an
-// app it calls launchApp(id); the window manager (milestone 3) installs itself
-// with setLauncher() and does the real work. Until then we show a friendly toast.
+// app it calls launchApp(id); the window manager (windowManager.js) installs itself
+// with setLauncher() and does the real work.
 
 import { toast } from './notifications.js';
 
@@ -48,6 +48,6 @@ export function launchApp(id, options = {}) {
   } else if (launcher && app.create) {
     launcher(app, options);
   } else {
-    toast({ title: app.name, message: 'Still blooming! This app arrives in a later milestone.', icon: app.icon });
+    toast({ title: app.name, message: 'This app is not ready yet.', icon: app.icon });
   }
 }

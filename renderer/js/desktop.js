@@ -10,7 +10,7 @@
 
 import { el } from './dom.js';
 import { iconEl } from './icons.js';
-import { listApps, getApp, launchApp } from './appRegistry.js';
+import { listApps, launchApp } from './appRegistry.js';
 import { getSetting, setSetting } from './settingsStore.js';
 import { showContextMenu } from './contextMenu.js';
 import { toast } from './notifications.js';
@@ -280,7 +280,6 @@ function onContextMenu(event) {
   if (iconNode) {
     const id = iconNode.dataset.appId;
     if (!selected.has(id)) selectOnly(id);
-    const app = getApp(id);
     const pinned = getSetting('pinned') || [];
     const isPinned = pinned.includes(id);
     showContextMenu(event.clientX, event.clientY, [
@@ -292,7 +291,6 @@ function onContextMenu(event) {
         onSelect: () => setSetting('pinned', isPinned ? pinned.filter((p) => p !== id) : [...pinned, id]),
       },
     ]);
-    void app;
     return;
   }
 

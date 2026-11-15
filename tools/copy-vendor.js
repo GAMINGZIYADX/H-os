@@ -27,6 +27,7 @@ for (const [pkg, file, folder, name] of FILES) {
   const from = path.join(root, 'node_modules', pkg, file);
   if (!fs.existsSync(from)) {
     console.warn(`[vendor] missing ${pkg}/${file} (run npm install)`);
+    process.exitCode = 1; // fail `npm run dist` instead of packaging an app without xterm / chess.js / Stockfish
     continue;
   }
   fs.mkdirSync(path.join(out, folder), { recursive: true });

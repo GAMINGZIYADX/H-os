@@ -148,6 +148,36 @@ exports.run = async function runFsApi({ js, check, sandbox }) {
   check('fs: non-image refused by readImage', code(await api(`hos.fs.readImage(${S('a.txt')})`)) === 'NOTIMAGE');
   check('fs: opening a .exe is blocked (nothing is launched)', code(await api(`hos.shell.openPath(${S('fake.exe')})`)) === 'BLOCKED');
 
+  // ---- text encodings: Notepad must never damage a file ----
+  fs.writeFileSync(path.join(sandbox, 'ansi.txt'), Buffer.from([0x63, 0x61, 0x66, 0xe9]));            // "café" with é as the single byte E9
+  r = await api(`hos.fs.readText(${S('ansi.txt')})`);
+  check('fs: an old ANSI (Windows-1252) file is read correctly, not as garbage', r.ok && r.data.text === 'café' && r.data.encoding === 'windows-1252', JSON.stringify(r.data));
+  r = await api(`hos.fs.writeText(${S('ansi.txt')}, 'café!', 'lf', 'windows-1252')`);
+  check('fs: ...and saved back as ANSI (the é stays one byte)', r.ok && fs.readFileSync(path.join(sandbox, 'ansi.txt')).equals(Buffer.from([0x63, 0x61, 0x66, 0xe9, 0x21])));
+  r = await api(`hos.fs.writeText(${S('ansi.txt')}, 'tulip 🌷', 'lf', 'windows-1252')`);
+  check("fs: a character ANSI can't hold is refused, the file is untouched", !r.ok && r.error.code === 'ENCODING' && fs.readFileSync(path.join(sandbox, 'ansi.txt')).equals(Buffer.from([0x63, 0x61, 0x66, 0xe9, 0x21])));
+  const utf16 = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('Grüße\r\nzwei', 'utf16le')]);
+  fs.writeFileSync(path.join(sandbox, 'utf16.txt'), utf16);
+  r = await api(`hos.fs.readText(${S('utf16.txt')})`);
+  check('fs: a UTF-16 file opens as text (not "binary")', r.ok && r.data.text === 'Grüße\nzwei' && r.data.encoding === 'utf16le' && r.data.eol === 'crlf', JSON.stringify(r.data));
+  r = await api(`hos.fs.writeText(${S('utf16.txt')}, 'Grüße\\nzwei', 'crlf', 'utf16le')`);
+  check('fs: ...and saves back byte-for-byte identical', r.ok && fs.readFileSync(path.join(sandbox, 'utf16.txt')).equals(utf16));
+  fs.writeFileSync(path.join(sandbox, 'bom.txt'), Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('hi', 'utf8')]));
+  r = await api(`hos.fs.readText(${S('bom.txt')})`);
+  await api(`hos.fs.writeText(${S('bom.txt')}, ${JSON.stringify('hi')}, 'lf', ${JSON.stringify(r.data && r.data.encoding)})`);
+  check('fs: a UTF-8 file with a BOM keeps its BOM when saved', r.data.encoding === 'utf8-bom' && fs.readFileSync(path.join(sandbox, 'bom.txt'))[0] === 0xef);
+  check('fs: unknown encoding names are refused', code(await api(`hos.fs.writeText(${S('w3.txt')}, 'x', 'lf', 'rot13')`)) === 'INVALID');
+
+  // ---- Replace must never bin the item being moved (or its own parent) ----
+  fs.mkdirSync(path.join(sandbox, 'rep', 'Photos', 'Photos'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'rep', 'Photos', 'Photos', 'inner.txt'), 'precious');
+  r = await api(`hos.fs.paste('move', [${S('rep/Photos/Photos')}], ${S('rep')}, 'replace')`);
+  check('fs: Replace refuses when the item it would replace CONTAINS the source (nothing is binned)', r.ok && r.data.failed.length === 1 && fs.readFileSync(path.join(sandbox, 'rep', 'Photos', 'Photos', 'inner.txt'), 'utf8') === 'precious', JSON.stringify(r.data));
+  if (junction) {
+    r = await api(`hos.fs.stat(${S('link-to-zone')})`);
+    check('fs: stat on a junction describes it as a folder (so Properties works)', r.ok && r.data.isDir === true && r.data.isSymlink === true, JSON.stringify(r.data));
+  }
+
   // ---- settings schema survives the new "explorer" key ----
   r = await js(`(async () => { await hos.settings.save({ explorer: { view: 'grid', sortKey: 'size', sortDir: 'desc', showHidden: true, evil: 1 } }); const s = await hos.settings.load(); return s.explorer; })()`);
   check('settings: explorer prefs saved, unknown keys dropped', r.view === 'grid' && r.sortKey === 'size' && r.sortDir === 'desc' && r.showHidden === true && !('evil' in r), JSON.stringify(r));

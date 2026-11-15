@@ -1,8 +1,8 @@
-// apps/manifest.js — the built-in apps, as plain descriptions.
+// apps/manifest.js — the built-in apps as plain descriptions, in Start-menu order.
 //
-// Right now these have no create() function (the apps aren't built yet), so
-// opening one shows a "still blooming" toast. As each app is written it calls
-// registerApp({...same id, create(){…}}) which replaces the entry here.
+// These entries only say which apps exist and in what order the Start menu lists them.
+// Each app's own file (apps/explorer.js, …) calls registerApp() again with the same id and adds
+// its create() function, which replaces the entry here. (To add an app, see the README.)
 
 import { registerApp } from '../appRegistry.js';
 

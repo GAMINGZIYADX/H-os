@@ -37,6 +37,9 @@ const expect = (name, ok, extra = '') => { if (!ok) failed++; console.log(`${ok 
   expect('the calculator recovers after an error (typing a digit)', (() => { const c = run('5/0='); c.digit(7); return c.state.entry === '7' && !c.state.error; })());
   expect('percent: 200+10% = 220', show('200+10%=') === '220');
   expect('percent alone is 0', show('50%') === '0');
+  expect('percent with x: 50 x 10% = 5 (like Windows)', show('50*10%=') === '5');
+  expect('percent with /: 200 / 50% = 400', show('200/50%=') === '400');
+  expect('percent with -: 200 - 10% = 180', show('200-10%=') === '180');
   expect('negate: 5 -> -5', show('5n') === '-5');
   expect('negate twice', show('5nn') === '5');
   expect('negative arithmetic: 5n+2= is -3', show('5n+2=') === '-3');

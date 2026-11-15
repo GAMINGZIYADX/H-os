@@ -1,5 +1,5 @@
 // clock.js — small helpers for time, date and friendly greetings.
-// (Used by the lock screen now; the taskbar clock and Start menu reuse them later.)
+// (Used by the lock screen.)
 
 // "9:41" — the hour and minute only, without AM/PM, in the user's locale.
 export function formatClock(date = new Date()) {

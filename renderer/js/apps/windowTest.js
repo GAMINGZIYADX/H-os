@@ -1,4 +1,4 @@
-// apps/windowTest.js — a TEMPORARY demo app that proves the window manager works.
+// apps/windowTest.js — a demo app that proves the window manager works (development only).
 //
 // It is also the best example of how to write an app. An app is just:
 //   registerApp({ id, name, icon, defaultSize, create(container, ctx) { … } })
@@ -6,7 +6,7 @@
 // `ctx` lets you set the window title, close the window, or launch other apps.
 // create() may return { destroy(), onFocus(), onChange(info), canClose() }.
 //
-// (Removed once the real apps are in, milestone 7.)
+// (main.js registers it only when H-os runs windowed, e.g. `npm run dev` and the tests.)
 
 import { registerApp } from '../appRegistry.js';
 import { el } from '../dom.js';

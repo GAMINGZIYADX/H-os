@@ -31,7 +31,7 @@ const PAGE_CHECKS = `
     if (!list.ok) throw new Error(list.error.message);
     return list.data.entries.length + ' items in home';
   });
-  await check('system folders are protected', async () => {
+  await check('reserved names are refused by the filesystem bridge', async () => {
     const r = await hos.fs.mkdir((await hos.fs.places()).data.home, 'NUL');
     if (r.ok || r.error.code !== 'BADNAME') throw new Error('reserved name accepted');
   });

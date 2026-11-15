@@ -2,15 +2,21 @@
 // H-os — path guard (main process, pure logic, no Electron imports)
 // -----------------------------------------------------------------------------
 // H-os edits the REAL filesystem, so every path that arrives from the page is
-// treated as untrusted. This module answers two questions:
+// treated as untrusted. This module answers three questions:
 //
-//   1. Is this a sane, absolute, well-formed path?          -> normalize()
-//   2. May H-os CHANGE (rename/delete/write/…) this place?   -> assertMutable()
+//   1. Is this a sane, absolute, well-formed path?           -> normalize()
+//   2. May H-os CHANGE this place (rename/delete/write…)?     -> assertMutable()
+//   3. May H-os put NEW things inside this folder?            -> assertContainer()
 //
-// Looking at things (listing a folder, reading a file) is always allowed; changing
-// system locations is not. "Protected" places (C:\Windows, C:\Program Files, /, /etc, /usr,
-// drive roots, the home folder itself, H-os's own folders…) refuse every change with
-// the friendly message "H-os protects these tulips".
+// Looking at things (listing a folder, reading a file) is always allowed; changing system
+// locations is not. "Protected" places (C:\Windows, C:\Program Files, /, /etc, /usr, drive roots,
+// the home folder itself, Documents/Desktop themselves, H-os's own folders…) refuse every change
+// with the friendly message "H-os protects these tulips".
+//
+// Two kinds of protection:
+//   * TREES   are protected together with everything inside them (C:\Windows, /usr, …).
+//   * EXACT   places are protected themselves, but things INSIDE are fine (your home folder,
+//             Documents, drive roots …): you can't delete "Documents", but you can put files in it.
 //
 // Because it takes the platform as a parameter, tools/test-guard.js can test BOTH the
 // Windows and Linux rules from any computer:  node tools/test-guard.js
@@ -27,7 +33,7 @@ class GuardError extends Error {
 }
 
 // Windows treats these as devices, not files (CON, NUL, COM1 …), even with an extension.
-const WIN_RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i;
+const WIN_RESERVED = /^(con|prn|aux|nul|conin\$|conout\$|com[0-9¹²³]|lpt[0-9¹²³])$/i;
 const WIN_BAD_CHARS = /[<>:"/\\|?*\x00-\x1f]/;
 
 // Names we hide unless "Show hidden items" is on (Windows legacy junctions, system files…).
@@ -38,6 +44,9 @@ const HIDDEN_NAMES = new Set([
   'printhood', 'recent', 'sendto', 'start menu', 'templates',
 ]);
 
+// The standard folders inside a home folder: they can't be renamed or deleted themselves.
+const KNOWN_FOLDERS = ['Desktop', 'Documents', 'Downloads', 'Pictures', 'Music', 'Videos'];
+
 function createGuard(options = {}) {
   const platform = options.platform || process.platform;
   const win = platform === 'win32';
@@ -46,27 +55,31 @@ function createGuard(options = {}) {
   const home = options.homedir || os.homedir();
   const key = (p) => (win ? p.toLowerCase() : p); // Windows paths ignore case
 
-  const exact = new Set(); // protected themselves, but things INSIDE them are fine (drive roots, home…)
-  const trees = [];        // protected along with everything inside them
+  const exact = new Set();        // protected themselves; things INSIDE are fine
+  const noContainer = new Set();  // exact places that must not receive new items either (C:\Users, /home …)
+  const trees = [];               // protected along with everything inside them
 
   const clean = (p) => {
     const r = P.resolve(p);
     return r.length > P.parse(r).root.length ? r.replace(/[\\/]+$/, '') : r;
   };
   const addExact = (p) => { if (p) exact.add(key(clean(p))); };
+  const addExactNoContainer = (p) => { if (p) { addExact(p); noContainer.add(key(clean(p))); } };
   const addTree = (p) => { if (p) trees.push(key(clean(p))); };
 
+  addExact(home);
+  KNOWN_FOLDERS.forEach((name) => addExact(P.join(home, name)));
   if (win) {
     const drive = env.SystemDrive || 'C:';
-    addExact(home);
-    addExact(P.join(drive + '\\', 'Users'));
+    addExactNoContainer(P.join(drive + '\\', 'Users'));
+    [P.join(home, 'AppData'), P.join(home, 'AppData', 'Local'), P.join(home, 'AppData', 'Roaming')].forEach(addExact);
     [env.SystemRoot, env.windir, env.ProgramFiles, env['ProgramFiles(x86)'], env.ProgramW6432, env.ProgramData]
       .forEach(addTree);
     for (const sub of ['Windows', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Recovery', 'Boot', '$WinREAgent']) {
       addTree(P.join(drive + '\\', sub));
     }
   } else {
-    ['/', '/home', '/Users', '/mnt', '/media', '/Volumes', home].forEach(addExact);
+    ['/', '/home', '/Users', '/mnt', '/media', '/Volumes'].forEach(addExactNoContainer);
     ['/bin', '/boot', '/dev', '/etc', '/lib', '/lib32', '/lib64', '/libx32', '/opt', '/proc', '/root', '/run', '/sbin',
       '/srv', '/sys', '/usr', '/var', '/snap', '/System', '/Library', '/Applications', '/private'].forEach(addTree);
   }
@@ -88,7 +101,8 @@ function createGuard(options = {}) {
 
     if (win) {
       // Must look like C:\something. Rejects \\server\share, \\?\C:\, \\.\device and \rooted.
-      if (!/^[a-zA-Z]:[\\/]/.test(input) && !/^[a-zA-Z]:$/.test(input)) {
+      // (A bare "C:" is drive-relative, so isAbsolute() already refused it above.)
+      if (!/^[a-zA-Z]:[\\/]/.test(input)) {
         throw new GuardError('INVALID', 'Network and device paths are not supported.');
       }
       if (input.slice(2).includes(':')) throw new GuardError('INVALID', "That path doesn't look right.");
@@ -105,19 +119,32 @@ function createGuard(options = {}) {
   // ---------------------------------------------------------------------------
   // Protection
   // ---------------------------------------------------------------------------
-  function isProtected(normalized) {
-    const k = key(normalized);
-    if (exact.has(k)) return true;
-    if (P.parse(normalized).root === normalized) return true; // any drive root / "/"
+  const isRoot = (n) => P.parse(n).root === n; // a drive root or "/"
+
+  // Inside one of the protected trees (or Windows' hidden per-drive system folders)?
+  function inProtectedTree(n) {
+    const k = key(n);
     for (const t of trees) {
       if (k === t || k.startsWith(t.endsWith(P.sep) ? t : t + P.sep)) return true;
     }
     if (win) {
-      // On every drive: the system's hidden folders.
-      const first = P.relative(P.parse(normalized).root, normalized).split(/[\\/]/)[0].toLowerCase();
+      const first = P.relative(P.parse(n).root, n).split(/[\\/]/)[0].toLowerCase();
       if (first === '$recycle.bin' || first === 'system volume information') return true;
     }
     return false;
+  }
+
+  // May this place itself NOT be changed (renamed, deleted, overwritten…)?
+  function isProtected(normalized) {
+    return exact.has(key(normalized)) || isRoot(normalized) || inProtectedTree(normalized);
+  }
+
+  // May this folder NOT receive new items (new folder, paste)? Stricter than isProtected for
+  // the places people legitimately work in: your home folder, Documents, a USB drive's root.
+  function isProtectedContainer(normalized) {
+    if (noContainer.has(key(normalized))) return true;
+    if (!win && isRoot(normalized)) return true; // "/"
+    return inProtectedTree(normalized);
   }
 
   function protectedMessage(normalized) {
@@ -129,6 +156,13 @@ function createGuard(options = {}) {
   function assertMutable(input) {
     const n = normalize(input);
     if (isProtected(n)) throw new GuardError('PROTECTED', protectedMessage(n));
+    return n;
+  }
+
+  // Returns the normalized path, or throws if H-os must not put new things inside it.
+  function assertContainer(input) {
+    const n = normalize(input);
+    if (isProtectedContainer(n)) throw new GuardError('PROTECTED', protectedMessage(n));
     return n;
   }
 
@@ -161,7 +195,10 @@ function createGuard(options = {}) {
     return n.startsWith('.') || HIDDEN_NAMES.has(n) || n.startsWith('ntuser.');
   }
 
-  return { normalize, isProtected, assertMutable, validateName, isInside, isHiddenName, path: P, GuardError, key };
+  return {
+    normalize, isProtected, isProtectedContainer, assertMutable, assertContainer, validateName, isInside, isHiddenName,
+    path: P, GuardError, key,
+  };
 }
 
 module.exports = { createGuard, GuardError };

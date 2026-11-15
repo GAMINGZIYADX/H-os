@@ -1,4 +1,4 @@
-/* Styles for the temporary Window Test app. */
+/* Styles for the Window Test demo app (development only). */
 .wt { height: 100%; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
 .wt-title { margin: 0; font-size: 20px; font-weight: 800; }
 .wt-text { margin: 0; color: var(--text-muted); line-height: 1.5; }

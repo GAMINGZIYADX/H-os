@@ -194,9 +194,9 @@ function create(container, ctx) {
   async function goHistory(delta) {
     const next = st.idx + delta;
     if (next < 0 || next >= st.history.length) return;
-    st.idx = next;
     try {
-      if (await load(st.history[st.idx])) {
+      if (await load(st.history[next])) {
+        st.idx = next; // only move the history position once the folder really loaded
         st.selection.clear();
         st.search = '';
         searchInput.value = '';
@@ -680,7 +680,7 @@ function create(container, ctx) {
     row('Name', info.name);
     row('Type', describe(entry).label);
     row('Location', parentOf(info.path) === 'thispc' ? 'This PC' : parentOf(info.path) || info.path);
-    const sizeCell = row('Size', info.isDir ? 'Calculating…' : `${formatSize(info.size)} (${info.size.toLocaleString()} bytes)`);
+    const sizeCell = row('Size', info.isDir ? 'Calculating…' : info.size === null ? 'Unknown' : `${formatSize(info.size)} (${info.size.toLocaleString()} bytes)`);
     if (info.isDir) {
       fsApi.folderInfo(info.path).then((fi) => {
         sizeCell.textContent = `${formatSize(fi.size)}${fi.truncated ? '+' : ''}  ·  ${fi.files.toLocaleString()} files, ${fi.folders.toLocaleString()} folders`;
@@ -795,6 +795,9 @@ function create(container, ctx) {
 
   searchInput.addEventListener('input', () => {
     st.search = searchInput.value.trim();
+    // Hidden items must not stay selected: Delete would act on things you can't see.
+    const visible = new Set(visibleEntries().map((e) => e.path));
+    st.selection = new Set([...st.selection].filter((p) => visible.has(p)));
     renderContent();
     renderStatus();
   });

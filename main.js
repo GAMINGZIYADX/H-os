@@ -17,6 +17,7 @@ const os = require('os');
 const mainSettings = require('./mainSettings');
 const mainFs = require('./mainFs');
 const mainTerm = require('./mainTerm');
+const { trusted } = require('./mainIpc');
 
 // ---- Command-line flags (for development / testing) -------------------------
 //   npm start                      -> real fullscreen H-os
@@ -137,6 +138,7 @@ function requestShutdownDialog() {
 // Immediately leave, no questions asked. app.exit() skips all close handlers.
 function emergencyExit() {
   allowQuit = true;
+  mainTerm.killAll(); // app.exit() skips 'will-quit', so end any shells ourselves
   app.exit(0);
 }
 
@@ -154,7 +156,12 @@ function forwardRendererLogs(win) {
       console.log(`[renderer:${levels[level] || level}] ${message} (${sourceId}:${line})`);
     }
   });
-  win.webContents.on('render-process-gone', (e, details) => console.log('[main] RENDERER GONE:', details.reason));
+  // If the page itself crashes the screen would stay blank (and closing is blocked): start the page again.
+  let reloads = 0;
+  win.webContents.on('render-process-gone', (e, details) => {
+    console.log('[main] RENDERER GONE:', details.reason);
+    if (details.reason !== 'clean-exit' && reloads++ < 3 && !win.isDestroyed()) setTimeout(() => win.webContents.reload(), 400);
+  });
   win.webContents.on('preload-error', (e, file, err) => console.log('[main] PRELOAD ERROR:', file, err));
   win.webContents.on('did-fail-load', (e, code, desc, url) => console.log('[main] LOAD FAILED:', code, desc, url));
 }
@@ -167,7 +174,8 @@ function safeUsername() {
 // Channel names are namespaced ("os:..."), later "fs:...", "shell:...", "term:...".
 function registerIpc() {
   // Renderer says: "the goodbye animation is done, really quit now".
-  ipcMain.on('os:quit', () => {
+  ipcMain.on('os:quit', (event) => {
+    if (!trusted(event)) return;
     if (SMOKE) console.log('[smoke] OK: quit through the normal shutdown path');
     allowQuit = true;
     app.quit();
@@ -181,10 +189,11 @@ function registerIpc() {
   mainTerm.register();
 
   // Settings: load everything / save a partial update (validated in mainSettings.js).
-  ipcMain.handle('settings:load', () => mainSettings.load());
-  ipcMain.handle('settings:save', (event, patch) => mainSettings.save(patch));
+  // (Like every other channel, these answer only to H-os's own page.)
+  ipcMain.handle('settings:load', (event) => (trusted(event) ? mainSettings.load() : {}));
+  ipcMain.handle('settings:save', (event, patch) => (trusted(event) ? mainSettings.save(patch) : {}));
 
-  ipcMain.handle('os:get-info', () => ({
+  ipcMain.handle('os:get-info', (event) => !trusted(event) ? {} : ({
     version: app.getVersion(),
     username: safeUsername(),
     electron: process.versions.electron,
