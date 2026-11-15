@@ -101,7 +101,7 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
   setTimeout(() => {
     console.log('[smoke] FAILED: timed out (app did not quit by itself)');
     require('electron').app.exit(1);
-  }, 180000);
+  }, 420000);
 
   async function enterShell() {
     await sleep(900);
@@ -158,6 +158,7 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
 
       if (gamesOnly) { // just the puzzle games
         await require('./smokeGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
+      await require('./smokeMoreGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
         console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL GAME CHECKS PASSED'}`);
         require('electron').app.exit(failures ? 1 : 0);
         return;
@@ -426,6 +427,7 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
 
       // ---------------------------------------------------------------- 8e. PUZZLES: Sudoku + Chess (milestone 6)
       await require('./smokeGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
+      await require('./smokeMoreGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
 
       // ---------------------------------------------------------------- 8f. SETTINGS, PANELS, PIN, CALCULATOR, CLOCK (milestone 7)
       await require('./smokeSystem').run({ js, check, snap, sleep, click, clickOn, key, type });

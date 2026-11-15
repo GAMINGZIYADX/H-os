@@ -1,0 +1,174 @@
+/* =============================================================================
+   Games: Number Match (nm), Tulip Sweep (sw), Tulip Merge (mg), Snake (sn)
+   and the parts they share (gk). Every colour comes from theme.css.
+   ============================================================================= */
+
+.gk { position: relative; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; outline: none; overflow: hidden; user-select: none; }
+.gk-head { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gk-chip { padding: 5px 12px; border-radius: var(--radius-pill); background: var(--surface-hover); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gk-head .btn:first-of-type { margin-left: auto; }
+.gk-seg { display: flex; gap: 3px; padding: 3px; border-radius: var(--radius-md); background: var(--surface-hover); }
+.gk-seg-btn { padding: 4px 11px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; font-size: 12.5px; font-weight: 700; }
+.gk-seg-btn:hover { background: var(--surface-pressed); }
+.gk-seg-btn.is-active { background: var(--accent); color: var(--accent-contrast); }
+.gk .btn.is-on { background: var(--accent); color: var(--accent-contrast); }
+.gk-status { flex: none; min-height: 18px; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
+.gk-foot { flex: none; display: flex; justify-content: center; gap: 8px; }
+.gk-foot .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.gk-foot .btn .icon svg { display: block; width: 16px; height: 16px; }
+
+/* ---- the celebration / game-over card ---- */
+.gk-win { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; overflow: hidden; background: color-mix(in srgb, var(--surface-solid) 55%, transparent); }
+.gk-win-card { position: relative; z-index: 2; padding: 24px 30px; max-width: 340px; text-align: center; border: 1px solid var(--surface-border); border-radius: var(--radius-xl); background: var(--surface-strong); box-shadow: var(--shadow-lg); animation: gk-pop 500ms var(--ease) both; }
+.gk-win-card h2 { margin: 6px 0 4px; font-size: 26px; font-weight: 800; }
+.gk-win-card p { margin: 0 0 16px; color: var(--text-muted); line-height: 1.45; }
+.gk-win-icon .tulip-icon { width: 54px; height: auto; }
+@keyframes gk-pop { from { opacity: 0; transform: scale(0.85) translateY(14px); } to { opacity: 1; transform: none; } }
+.gk-petal { position: absolute; top: -30px; z-index: 1; border-radius: 60% 40% 60% 40% / 70% 70% 30% 30%; opacity: 0.9; pointer-events: none; animation: gk-fall linear infinite; }
+@keyframes gk-fall {
+  0% { transform: translate(0, -30px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.95; }
+  100% { transform: translate(var(--drift), 115vh) rotate(var(--spin)); opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) { .gk-petal { animation-duration: 12s !important; } }
+
+/* ---------------------------------------------------------------- Number Match */
+.nm-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; justify-content: center; padding: 4px; }
+.nm-board { width: min(100%, 470px); container-type: inline-size; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; align-content: start; }
+.nm-cell {
+  aspect-ratio: 1; padding: 0; border: 1px solid var(--game-cell-edge); border-radius: var(--radius-md);
+  background: var(--game-cell); color: var(--text); font: inherit; font-size: 5.8cqw; font-weight: 800; line-height: 1;
+  transition: transform var(--dur-fast) var(--ease), background var(--dur-fast), opacity var(--dur);
+}
+.nm-cell:hover:not(.is-clear):not(.is-selected) { background: var(--game-cell-hover); }
+.nm-cell.is-clear { background: transparent; border-color: transparent; pointer-events: none; }
+.nm-cell.is-selected { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); transform: scale(0.93); }
+.nm-cell.is-hint { box-shadow: 0 0 0 3px var(--game-glow); animation: nm-pulse 900ms ease-in-out infinite alternate; }
+@keyframes nm-pulse { from { transform: scale(1); } to { transform: scale(1.07); } }
+
+/* ---------------------------------------------------------------- Tulip Sweep */
+.sw-stage { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.sw-board {
+  container-type: size;
+  width: min(100cqw, calc(100cqh * var(--cols) / var(--rows)));
+  aspect-ratio: calc(var(--cols) / var(--rows));
+  display: grid; grid-template: repeat(var(--rows), 1fr) / repeat(var(--cols), 1fr); gap: 2px; padding: 3px; box-sizing: border-box;
+  border-radius: var(--radius-md); background: var(--game-board); box-shadow: var(--shadow-md);
+}
+.sw-cell {
+  display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 4px;
+  background: linear-gradient(160deg, var(--sweep-hidden-hi), var(--sweep-hidden)); color: var(--text);
+  font: inherit; font-size: calc(100cqw / var(--cols) * 0.58); font-weight: 800; line-height: 1;
+}
+.sw-cell:not(.is-open):hover { background: linear-gradient(160deg, var(--sweep-hidden-hi), var(--sweep-hidden-hover)); }
+.sw-cell.is-open { background: var(--sweep-open); }
+.sw-cell .icon { display: grid; width: 64%; height: 64%; }
+.sw-cell .icon svg { width: 100%; height: 100%; fill: currentColor; }
+.sw-cell.is-flag { color: var(--accent); }
+.sw-cell.is-mine { color: var(--sweep-mine); }
+.sw-cell.is-boom { background: var(--sweep-boom); }
+.sw-cell.is-wrong { background: var(--sweep-boom); color: var(--danger); opacity: 0.8; }
+.sw-cell.is-cursor { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sw-cell[data-n='1'] { color: var(--sweep-1); }
+.sw-cell[data-n='2'] { color: var(--sweep-2); }
+.sw-cell[data-n='3'] { color: var(--sweep-3); }
+.sw-cell[data-n='4'] { color: var(--sweep-4); }
+.sw-cell[data-n='5'] { color: var(--sweep-5); }
+.sw-cell[data-n='6'] { color: var(--sweep-6); }
+.sw-cell[data-n='7'] { color: var(--sweep-7); }
+.sw-cell[data-n='8'] { color: var(--sweep-8); }
+
+/* ---------------------------------------------------------------- Tulip Merge */
+.mg-stage { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.mg-board {
+  --gap: 2.6cqw;
+  --cell: calc((100cqw - (var(--n) + 1) * var(--gap)) / var(--n));
+  container-type: size; position: relative; box-sizing: border-box; touch-action: none;
+  width: min(100cqw, 100cqh); aspect-ratio: 1;
+  display: grid; grid-template: repeat(var(--n), 1fr) / repeat(var(--n), 1fr); gap: var(--gap); padding: var(--gap);
+  border-radius: var(--radius-lg); background: var(--game-board); box-shadow: var(--shadow-md);
+}
+.mg-slot { border-radius: calc(var(--gap) * 1.3); background: color-mix(in srgb, var(--game-cell) 45%, var(--game-board)); }
+.mg-tiles { position: absolute; inset: 0; pointer-events: none; }
+.mg-tile {
+  position: absolute; left: 0; top: 0; width: var(--cell); height: var(--cell); display: grid; place-items: center;
+  translate: calc(var(--gap) + var(--c) * (var(--cell) + var(--gap))) calc(var(--gap) + var(--r) * (var(--cell) + var(--gap)));
+  transition: translate 120ms var(--ease);
+  border-radius: calc(var(--gap) * 1.3); font-weight: 800; font-size: calc(var(--cell) * 0.44); line-height: 1;
+  background: color-mix(in srgb, var(--merge-high) min(100%, calc(var(--lv) * 9%)), var(--merge-low));
+  color: color-mix(in srgb, var(--merge-ink-high) clamp(0%, calc((var(--lv) - 5) * 100%), 100%), var(--merge-ink-low)); /* small tiles: ink-low, from 64 up: ink-high */
+  box-shadow: var(--shadow-sm);
+}
+.mg-tile[data-digits='3'] { font-size: calc(var(--cell) * 0.36); }
+.mg-tile[data-digits='4'], .mg-tile[data-digits='5'] { font-size: calc(var(--cell) * 0.29); }
+.mg-tile.is-new { animation: mg-appear 170ms var(--ease) 110ms backwards; }
+.mg-tile.is-joined { animation: mg-bump 200ms var(--ease) 100ms backwards; }
+@keyframes mg-appear { from { scale: 0.2; opacity: 0; } to { scale: 1; opacity: 1; } }
+@keyframes mg-bump { 0% { scale: 0.85; } 55% { scale: 1.15; } 100% { scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .mg-tile { transition: none; } .mg-tile.is-new, .mg-tile.is-joined { animation: none; } }
+
+/* ---------------------------------------------------------------- Snake */
+.sn-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; }
+.sn-canvas { display: block; border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
+.sn-veil {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; pointer-events: none;
+  font-size: 17px; font-weight: 800; background: color-mix(in srgb, var(--surface-solid) 22%, transparent);
+}
+.sn-veil-text { padding: 10px 20px; border-radius: var(--radius-lg); background: var(--surface-strong); box-shadow: var(--shadow-md); }
+
+/* ---------------------------------------------------------------- Memory */
+.mm-stage { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.mm-board {
+  container-type: size; box-sizing: border-box;
+  width: min(100cqw, calc(100cqh * var(--cols) / var(--rows)));
+  aspect-ratio: calc(var(--cols) / var(--rows));
+  display: grid; grid-template: repeat(var(--rows), 1fr) / repeat(var(--cols), 1fr); gap: 2.2cqw; padding: 2.2cqw;
+  border-radius: var(--radius-lg); background: var(--game-board); box-shadow: var(--shadow-md);
+}
+.mm-card { position: relative; min-width: 0; min-height: 0; padding: 0; border: 0; background: transparent; perspective: 600px; }
+.mm-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 320ms var(--ease); }
+.mm-card.is-up .mm-inner { transform: rotateY(180deg); }
+.mm-face { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.mm-back { background: linear-gradient(160deg, var(--sweep-hidden-hi), var(--sweep-hidden)); }
+.mm-card:not(.is-up):hover .mm-back { background: linear-gradient(160deg, var(--sweep-hidden-hi), var(--sweep-hidden-hover)); }
+.mm-back-icon { display: grid; width: 46%; opacity: 0.9; }
+.mm-back-icon .tulip-icon { width: 100%; height: auto; }
+.mm-front { transform: rotateY(180deg); background: var(--game-cell); border: 1px solid var(--game-cell-edge); }
+.mm-card.is-matched .mm-front { background: color-mix(in srgb, var(--leaf) 22%, var(--game-cell)); }
+.mm-art { display: grid; width: 62%; height: 62%; }
+.mm-art svg { width: 100%; height: 100%; }
+.mm-hole { fill: var(--game-cell); }
+.mm-card[data-s='0'] .mm-front, .mm-card[data-s='6'] .mm-front { color: var(--term-magenta); }
+.mm-card[data-s='1'] .mm-front, .mm-card[data-s='7'] .mm-front { color: var(--term-red); }
+.mm-card[data-s='2'] .mm-front, .mm-card[data-s='8'] .mm-front { color: var(--term-yellow); }
+.mm-card[data-s='3'] .mm-front, .mm-card[data-s='9'] .mm-front { color: var(--term-blue); }
+.mm-card[data-s='4'] .mm-front, .mm-card[data-s='10'] .mm-front { color: var(--term-cyan); }
+.mm-card[data-s='5'] .mm-front, .mm-card[data-s='11'] .mm-front { color: var(--term-green); }
+@media (prefers-reduced-motion: reduce) { .mm-inner { transition: none; } }
+
+/* ---------------------------------------------------------------- Tulip Bloom */
+.bl-stage { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.bl-board {
+  container-type: size; box-sizing: border-box; width: min(100cqw, 100cqh); aspect-ratio: 1;
+  display: grid; grid-template: repeat(var(--n), 1fr) / repeat(var(--n), 1fr); gap: 1.8cqw; padding: 1.8cqw;
+  border-radius: var(--radius-lg); background: var(--game-board); box-shadow: var(--shadow-md);
+}
+.bl-cell {
+  position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; padding: 0; border: 1px solid var(--game-cell-edge);
+  border-radius: var(--radius-md); background: var(--game-cell); transition: transform var(--dur-fast) var(--ease), background var(--dur);
+}
+.bl-cell:hover { background: var(--game-cell-hover); }
+.bl-cell:active { transform: scale(0.94); }
+.bl-cell svg { width: 82%; height: 82%; }
+.bl-petal { fill: var(--bloom-on); }
+.bl-core { fill: var(--bloom-core); }
+.bl-cup { fill: var(--bloom-off); }
+.bl-stem { stroke: var(--bloom-off); }
+.bl-cell .bl-flower { display: none; transform-origin: center; }
+.bl-cell.is-on .bl-flower { display: inline; animation: bl-open 260ms var(--ease); }
+.bl-cell.is-on .bl-bud { display: none; }
+.bl-cell.is-hint { box-shadow: 0 0 0 3px var(--game-glow); animation: nm-pulse 900ms ease-in-out infinite alternate; }
+.bl-cell.is-cursor { outline: 2px solid var(--accent); outline-offset: -2px; }
+@keyframes bl-open { from { transform: scale(0.6); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .bl-cell.is-on .bl-flower, .bl-cell.is-hint { animation: none; } }
+.sn-veil[hidden] { display: none; }

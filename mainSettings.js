@@ -27,6 +27,7 @@ const DEFAULTS = {
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false }, // File Explorer preferences
   sudoku: null,                                                        // game in progress (see sanitize)
   sudokuBest: { easy: null, medium: null, hard: null },                 // best times in seconds
+  gameStats: {},                                                       // best scores of the other games: { gameId: { key: number } } (see GAME_STATS)
   volume: 70,                                                          // 0-100, system sounds
   brightness: 100,                                                     // 40-100, the 'brightness' slider (a soft dimming overlay)
   userName: '',                                                        // shown in the Start menu ('' = your computer's user name)
@@ -43,6 +44,17 @@ const ENUMS = {
 const EXPLORER_ENUMS = { view: ['details', 'list', 'grid'], sortKey: ['name', 'date', 'size', 'type'], sortDir: ['asc', 'desc'] };
 
 const ID_PATTERN = /^[a-z0-9-]{1,40}$/; // app ids: lowercase letters, digits, dashes
+
+// The games that keep a personal best, and exactly which records each may store (whole numbers only).
+// Anything else is dropped by sanitize(). Keep in sync with the games in renderer/js/apps/.
+const GAME_STATS = {
+  nummatch: ['score'],                 // highest score
+  sweep: ['easy', 'medium', 'hard'],   // fastest time in seconds
+  merge: ['score', 'tile'],            // highest score, biggest tile
+  snake: ['score'],                    // longest snake score
+  memory: ['easy', 'medium', 'hard'],  // fewest moves
+  bloom: ['small', 'medium', 'large'], // fewest presses
+};
 
 function settingsFile() {
   return path.join(app.getPath('userData'), 'settings.json');
@@ -118,6 +130,22 @@ function sanitize(input) {
     out.sudokuBest = best;
   }
 
+  // Best scores of the other games: only known games and known records, whole numbers 1 to 10 million.
+  if (input.gameStats && typeof input.gameStats === 'object' && !Array.isArray(input.gameStats)) {
+    const stats = {};
+    for (const [game, keys] of Object.entries(GAME_STATS)) {
+      const src = input.gameStats[game];
+      if (!src || typeof src !== 'object' || Array.isArray(src)) continue;
+      const row = {};
+      for (const k of keys) {
+        const v = src[k];
+        if (Number.isInteger(v) && v > 0 && v <= 10000000) row[k] = v;
+      }
+      if (Object.keys(row).length) stats[game] = row;
+    }
+    out.gameStats = stats;
+  }
+
   return out;
 }
 
@@ -155,4 +183,4 @@ function save(patch) {
   return cache;
 }
 
-module.exports = { load, save, sanitize };
+module.exports = { load, save, sanitize, GAME_STATS };

@@ -28,16 +28,22 @@ const SELFTEST = process.argv.includes('--selftest'); // health check of the rea
 const WINDOWED = process.argv.includes('--windowed') || SELFTEST;
 const smokeArg = process.argv.find((a) => a === '--smoke' || a.startsWith('--smoke='));
 const SMOKE = Boolean(smokeArg);
-const SMOKE_DIR = smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : path.join(__dirname, 'smoke-output');
+const SMOKE_DIR = path.resolve(smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : path.join(__dirname, 'smoke-output')); // (absolute, because Electron insists on that for userData)
 
 // The emergency exit keys. Works even if the renderer is frozen or crashed,
 // because it is handled here in the main process. You can never be trapped.
 const EMERGENCY_ACCELERATOR = 'CommandOrControl+Alt+Shift+Q';
 
-// Smoke tests work on a throw-away sandbox folder next to the screenshots (NOT inside user-data, which is protected).
-const SMOKE_SANDBOX = SMOKE_DIR + '-sandbox';
+// Smoke tests work on a throw-away sandbox folder in the system temp folder. It must NOT be inside the project folder
+// or user-data: H-os protects its own program files and settings, so the test would be refused ("protects these tulips").
+const SMOKE_SANDBOX = path.join(os.tmpdir(), 'h-os-smoke-sandbox');
 // Smoke tests use their own throw-away user-data folder, never your real settings.
-if (SMOKE) app.setPath('userData', path.join(SMOKE_DIR, 'userdata'));
+if (SMOKE) {
+  app.setPath('userData', path.join(SMOKE_DIR, 'userdata'));
+  // Every smoke run starts from factory settings, so one run cannot disturb the next.
+  // (Only the --smoke-verify run keeps them: it checks that the previous run's settings survived.)
+  if (!process.argv.includes('--smoke-verify')) fs.rmSync(path.join(SMOKE_DIR, 'userdata'), { recursive: true, force: true });
+}
 if (SELFTEST) app.setPath('userData', path.join(os.tmpdir(), 'h-os-selftest-' + process.pid)); // never touches your real settings
 const rendererErrors = []; // collected for the self-test
 

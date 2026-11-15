@@ -110,6 +110,34 @@
   --eval-white: #fffaf6;
   --eval-black: #3a2250;
 
+  /* Games: the boards and tiles shared by Number Match, Tulip Sweep, Tulip Merge, Snake, Memory and Tulip Bloom */
+  --game-board: #f7cfe0;           /* the frame and gaps behind the cells */
+  --game-cell: #fff7fa;            /* an empty / neutral cell */
+  --game-cell-hover: #ffe9f1;
+  --game-cell-edge: rgb(143 31 79 / 0.14);
+  --game-glow: rgb(255 224 138 / 0.9);     /* hint and selection halo */
+  --sweep-hidden: #f4a6c0;         /* Tulip Sweep: an unopened bud */
+  --sweep-hidden-hi: #fbd3e1;
+  --sweep-hidden-hover: #f7b6cc;
+  --sweep-open: #fff3ea;           /* an opened patch of ground */
+  --sweep-mine: #8f1f4f;           /* the thorn ball */
+  --sweep-boom: rgb(214 49 63 / 0.35);
+  --sweep-1: var(--term-blue);  --sweep-2: var(--term-green); --sweep-3: var(--term-red);   --sweep-4: var(--accent-purple);
+  --sweep-5: var(--term-yellow); --sweep-6: var(--term-cyan);  --sweep-7: var(--term-black); --sweep-8: var(--term-bright-black);
+  --merge-low: #fff3ea;            /* Tulip Merge: the smallest tile; bigger tiles blend towards --merge-high */
+  --merge-high: #c2306b;
+  --merge-ink-low: var(--text);     /* number colour on the smallest / biggest tiles (blends in between) */
+  --merge-ink-high: #ffffff;
+  --snake-a: #fff3ea;              /* Snake: the two checkerboard greens/creams, the snake and the tulip it chases */
+  --snake-b: #ffe9f1;
+  --snake-head: #3f8a5a;
+  --snake-body: #6bb57c;
+  --snake-food: #c2306b;
+  --snake-stem: #3f8a5a;
+  --bloom-off: #c9b8f0;            /* Tulip Bloom: a closed bud, an open flower and its heart */
+  --bloom-on: #f4a6c0;
+  --bloom-core: #ffe08a;
+
   /* Terminal colours (read by the Terminal app; xterm needs real colour values) */
   --term-bg: #fff8fb; --term-fg: #3a2433; --term-cursor: #c2306b; --term-selection: rgba(244, 166, 192, 0.55);
   --term-black: #3a2433;  --term-red: #d6313f;  --term-green: #3f8a5a;  --term-yellow: #a8750a;
@@ -150,6 +178,28 @@
   --chess-light: #e9d3df;
   --chess-dark: #b25f84;
   --eval-white: #fffaf6;
+  --game-board: #4a2f66;
+  --game-cell: #3a2650;
+  --game-cell-hover: #4a3366;
+  --game-cell-edge: rgb(255 220 235 / 0.16);
+  --game-glow: rgb(255 224 138 / 0.75);
+  --sweep-hidden: #8b5a9c;
+  --sweep-hidden-hi: #a874b8;
+  --sweep-hidden-hover: #9a68ac;
+  --sweep-open: #2b1d3b;
+  --sweep-mine: #f4a6c0;
+  --sweep-boom: rgb(255 123 135 / 0.4);
+  --merge-low: #3a2650;
+  --merge-high: #f4a6c0;
+  --merge-ink-high: #3a1230;
+  --snake-a: #33224a;
+  --snake-b: #3a2850;
+  --snake-head: #8fd6a3;
+  --snake-body: #5fb37a;
+  --snake-food: #f4a6c0;
+  --snake-stem: #8fd6a3;
+  --bloom-off: #5d4a85;
+  --bloom-on: #f4a6c0;
   --danger: #ff7b87;
   --danger-hover: #ff9aa3;
   --danger-contrast: #3a0f14;

@@ -25,6 +25,19 @@ const APP_ICONS = {
 
   chess: `<svg viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="10" fill="#FBD3E1"/><g transform="translate(6.7 5.3) scale(.72)" fill="#4A2F5E"><circle cx="24" cy="14" r="6.5"/><path d="M18 26c0-3 2.5-5 6-5s6 2 6 5c0 3-2 5-3 8h-6c-1-3-3-5-3-8Z"/><rect x="14" y="34" width="20" height="5" rx="2.5"/><rect x="11" y="39" width="26" height="5" rx="2.5" fill="#C2306B"/></g></svg>`,
 
+  // The other games (original artwork, like every icon here)
+  nummatch: `<svg viewBox="0 0 48 48"><rect x="4" y="10" width="19" height="28" rx="6" fill="#F4A6C0"/><rect x="25" y="10" width="19" height="28" rx="6" fill="#C9B8F0"/><g font-family="Nunito, sans-serif" font-size="19" font-weight="800" fill="#FFFFFF" text-anchor="middle"><text x="13.5" y="31">3</text><text x="34.5" y="31">7</text></g><path d="M24 6v4M21.5 8h5" stroke="#FFE08A" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+
+  sweep: `<svg viewBox="0 0 48 48"><rect x="5" y="5" width="38" height="38" rx="8" fill="#F4A6C0"/><path d="M5 18h38M5 31h38M18 5v38M31 5v38" stroke="#FBD3E1" stroke-width="2"/><circle cx="24.5" cy="24.5" r="7" fill="#8F1F4F"/><path d="M24.5 13v5M24.5 31v5M13 24.5h5M31 24.5h5M16.5 16.5l3.5 3.5M29 29l3.5 3.5M16.5 32.5l3.5-3.5M29 20l3.5-3.5" stroke="#8F1F4F" stroke-width="2.6" stroke-linecap="round"/><circle cx="22.5" cy="22.5" r="1.8" fill="#FFF8EC"/></svg>`,
+
+  merge: `<svg viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="9" fill="#C9B8F0"/><rect x="8" y="8" width="14.5" height="14.5" rx="4" fill="#FFF8EC"/><rect x="25.5" y="8" width="14.5" height="14.5" rx="4" fill="#F4A6C0"/><rect x="8" y="25.5" width="14.5" height="14.5" rx="4" fill="#E0709E"/><g font-family="Nunito, sans-serif" font-size="11" font-weight="800" text-anchor="middle"><text x="15.2" y="19" fill="#C2306B">2</text><text x="32.7" y="19" fill="#FFFFFF">4</text><text x="15.2" y="36.5" fill="#FFFFFF">8</text></g></svg>`,
+
+  snake: `<svg viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="10" fill="#FFF8EC"/><path d="M12 35h14a7 7 0 0 0 0-14H18a5 5 0 0 1 0-10h12" fill="none" stroke="#6BB57C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31" cy="11" r="1.7" fill="#FFFFFF"/><circle cx="31.4" cy="11" r=".8" fill="#3A2433"/><g transform="translate(33 27)"><path d="M5 12V6" stroke="#3F8A5A" stroke-width="2" stroke-linecap="round"/><path d="M0 0l2.5 3L5 0l2.5 3L10 0c1 6-1 9-5 9S-1 6 0 0Z" fill="#C2306B"/></g></svg>`,
+
+  memory: `<svg viewBox="0 0 48 48"><rect x="3" y="9" width="21" height="30" rx="5" fill="#F4A6C0" transform="rotate(-8 13 24)"/><rect x="24" y="9" width="21" height="30" rx="5" fill="#FFF8EC" stroke="#C9B8F0" stroke-width="2" transform="rotate(8 35 24)"/><path d="M35 33c-5-3.5-7-6-7-8.2a3.6 3.6 0 0 1 7-1.2 3.6 3.6 0 0 1 7 1.2c0 2.2-2 4.7-7 8.2Z" fill="#C2306B" transform="rotate(8 35 24)"/><path d="M10 22l3 3 3-3 3 3 3-3c.8 6-1 9-6 9s-6.8-3-6-9Z" fill="#FFF8EC" transform="rotate(-8 13 24)"/></svg>`,
+
+  bloom: `<svg viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="10" fill="#C9B8F0"/><g fill="#F4A6C0"><circle cx="24" cy="13" r="6"/><circle cx="33.5" cy="20" r="6"/><circle cx="29.9" cy="31" r="6"/><circle cx="18.1" cy="31" r="6"/><circle cx="14.5" cy="20" r="6"/></g><circle cx="24" cy="24" r="5" fill="#FFE08A"/></svg>`,
+
   notepad: `<svg viewBox="0 0 48 48"><rect x="9" y="6" width="30" height="37" rx="5" fill="#FFF8EC" stroke="#F4A6C0" stroke-width="2"/><path d="M9 11a5 5 0 0 1 5-5h20a5 5 0 0 1 5 5v4H9Z" fill="#F4A6C0"/><circle cx="16" cy="8.5" r="2" fill="#8F1F4F"/><circle cx="24" cy="8.5" r="2" fill="#8F1F4F"/><circle cx="32" cy="8.5" r="2" fill="#8F1F4F"/><path d="M15 23h18M15 29h18M15 35h11" stroke="#C9B8F0" stroke-width="2.4" stroke-linecap="round"/></svg>`,
 
   calculator: `<svg viewBox="0 0 48 48"><rect x="9" y="5" width="30" height="38" rx="6" fill="#C9B8F0"/><rect x="13" y="9" width="22" height="9" rx="3" fill="#FFF8EC"/><g fill="#FFF8EC"><circle cx="16.5" cy="25" r="2.6"/><circle cx="24" cy="25" r="2.6"/><circle cx="16.5" cy="32" r="2.6"/><circle cx="24" cy="32" r="2.6"/><circle cx="16.5" cy="39" r="2.6"/><circle cx="24" cy="39" r="2.6"/></g><g fill="#EE82A8"><circle cx="31.5" cy="25" r="2.6"/><circle cx="31.5" cy="32" r="2.6"/><circle cx="31.5" cy="39" r="2.6"/></g></svg>`,
@@ -80,6 +93,7 @@ const UI_PATHS = {
   play: '<path d="M8 5v14l11-7z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
   flag: '<path d="M6 21V4M6 5h11l-2 4 2 4H6"/>',
+  thorn: '<circle cx="12" cy="12" r="5.6" fill="currentColor" stroke="none"/><path d="M12 2.6v3.4M12 17.8v3.4M2.8 12h3.4M17.8 12h3.4M5.5 5.5l2.4 2.4M16.1 16.1l2.4 2.4M5.5 18.5l2.4-2.4M16.1 7.9l2.4-2.4"/>',
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   forward: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   up: '<path d="M12 19V5M6 11l6-6 6 6"/>',

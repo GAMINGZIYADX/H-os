@@ -22,7 +22,7 @@ exports.run = async function runGames(t) {
 
   // ===================================================================== Puzzles hub
   await js(`window.__hos.launch('puzzles'); 0`);
-  check('hub: lists Sudoku and Chess', await waitFor(`document.querySelectorAll('.win.is-focused .pz-card').length === 2`));
+  check('hub: lists every game', await waitFor(`document.querySelectorAll('.win.is-focused .pz-card').length === 8`));
   await snap('60-puzzles-hub.png');
   await clickOn('.win.is-focused .pz-card', 'Sudoku');
   check('hub: clicking a card opens the game', await waitFor(`!!document.querySelector('.win.is-focused .sd-board')`));
