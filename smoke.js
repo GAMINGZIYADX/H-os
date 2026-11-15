@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly, gamesOnly, systemOnly }) {
+exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly, gamesOnly, systemOnly, exitOnly }) {
   const wc = win.webContents;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const js = (code) => wc.executeJavaScript(code);
@@ -128,6 +128,24 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
         await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
         console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL TERMINAL CHECKS PASSED'}`);
         require('electron').app.exit(failures ? 1 : 0);
+        return;
+      }
+
+      if (exitOnly) { // the ways OUT of the fullscreen app (run in real fullscreen: npm run smoke:exit-fullscreen)
+        await sleep(300);
+        wc.sendInputEvent({ type: 'keyDown', keyCode: 'F4', modifiers: ['alt'] });
+        check('Alt+F4 asks "Shut down H-os?" instead of quitting', await js(`new Promise((r) => setTimeout(() => r(!!document.querySelector('.dialog')), 600))`));
+        await key('Escape');
+        await sleep(400);
+        check('Esc dismisses it and H-os stays', (await js(`!document.querySelector('.dialog')`)));
+        win.close(); // what the window's own close button / the OS would do
+        check('closing the window also just asks', await js(`new Promise((r) => setTimeout(() => r(!!document.querySelector('.dialog')), 600))`));
+        await key('Escape');
+        console.log('[smoke] sending Ctrl+Alt+Shift+Q (the emergency exit): the app must disappear now…');
+        wc.sendInputEvent({ type: 'keyDown', keyCode: 'Q', modifiers: ['control', 'alt', 'shift'] });
+        await sleep(2500);
+        console.log('[smoke] FAIL: still running after the emergency exit');
+        require('electron').app.exit(1);
         return;
       }
 

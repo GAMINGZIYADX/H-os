@@ -23,7 +23,8 @@ const mainTerm = require('./mainTerm');
 //   npm run dev                    -> windowed + resizable, with F12 devtools
 //   electron . --windowed --smoke=DIR -> windowed, runs smoke.js (plays with the UI using real
 //                                     mouse/keyboard events, saves screenshots into DIR, exits)
-const WINDOWED = process.argv.includes('--windowed');
+const SELFTEST = process.argv.includes('--selftest'); // health check of the real app (selftest.js), then exit
+const WINDOWED = process.argv.includes('--windowed') || SELFTEST;
 const smokeArg = process.argv.find((a) => a === '--smoke' || a.startsWith('--smoke='));
 const SMOKE = Boolean(smokeArg);
 const SMOKE_DIR = smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : path.join(__dirname, 'smoke-output');
@@ -36,6 +37,8 @@ const EMERGENCY_ACCELERATOR = 'CommandOrControl+Alt+Shift+Q';
 const SMOKE_SANDBOX = SMOKE_DIR + '-sandbox';
 // Smoke tests use their own throw-away user-data folder, never your real settings.
 if (SMOKE) app.setPath('userData', path.join(SMOKE_DIR, 'userdata'));
+if (SELFTEST) app.setPath('userData', path.join(os.tmpdir(), 'h-os-selftest-' + process.pid)); // never touches your real settings
+const rendererErrors = []; // collected for the self-test
 
 let mainWindow = null;
 
@@ -58,6 +61,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    icon: path.join(__dirname, 'build', 'icon.png'),
     backgroundColor: '#fbe7ef', // matches the boot screen so there's no white flash
     show: false, // shown once the page is ready (see 'ready-to-show')
     autoHideMenuBar: true,
@@ -145,6 +149,7 @@ function forwardRendererLogs(win) {
     if (typeof level === 'object' && level !== null) {
       const d = level;
       console.log(`[renderer:${String(d.level).toUpperCase()}] ${d.message} (${d.sourceId}:${d.lineNumber})`);
+      if (String(d.level).toLowerCase() === 'error') rendererErrors.push(String(d.message).slice(0, 200));
     } else {
       console.log(`[renderer:${levels[level] || level}] ${message} (${sourceId}:${line})`);
     }
@@ -197,6 +202,7 @@ app.whenReady().then(() => {
   const ok = globalShortcut.register(EMERGENCY_ACCELERATOR, emergencyExit);
   if (!ok) console.log('[main] could not register emergency shortcut (the in-window backup still works)');
 
+  if (SELFTEST) require('./selftest').run({ win: mainWindow, app, exit: (code) => { allowQuit = true; app.exit(code); }, errors: rendererErrors });
   if (SMOKE) {
     require('./smoke').run({
       win: mainWindow,
@@ -204,6 +210,7 @@ app.whenReady().then(() => {
       sandbox: SMOKE_SANDBOX,
       fsapi: process.argv.includes('--smoke-fsapi'), // only test the filesystem API, then exit
       gamesOnly: process.argv.includes('--smoke-games'), // only the puzzle games
+      exitOnly: process.argv.includes('--smoke-exit'), // test Alt+F4 / close / the emergency exit
       systemOnly: process.argv.includes('--smoke-system'), // only settings / panels / PIN / calculator / clock
       termOnly: process.argv.includes('--smoke-term'), // only test the Terminal (HOS_NO_PTY=1 = pipe mode)
       verify: process.argv.includes('--smoke-verify'), // 2nd run: check that settings survived

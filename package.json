@@ -1,36 +1,105 @@
 {
   "name": "h-os",
   "productName": "H-os",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "H-os: a cute tulip-themed Windows 11-style desktop that runs as a fullscreen app.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --windowed",
+    "dist": "electron-builder --win portable nsis --x64",
+    "dist:dir": "electron-builder --dir",
+    "test:unit": "node tools/test-guard.js && node tools/test-sudoku.js && node tools/test-calc.js",
+    "test:guard": "node tools/test-guard.js",
+    "test:sudoku": "node tools/test-sudoku.js",
+    "test:calc": "node tools/test-calc.js",
     "smoke": "electron . --windowed --smoke",
     "smoke:fs": "electron . --windowed --smoke=smoke-output --smoke-fsapi",
-    "test:guard": "node tools/test-guard.js",
+    "smoke:term": "electron . --windowed --smoke=smoke-output --smoke-term",
+    "smoke:games": "electron . --windowed --smoke=smoke-output --smoke-games",
+    "smoke:system": "electron . --windowed --smoke=smoke-output --smoke-system",
+    "selftest": "electron . --windowed --selftest",
+    "icons": "electron tools/make-icons.js",
     "postinstall": "node tools/copy-vendor.js",
     "prestart": "node tools/copy-vendor.js",
     "predev": "node tools/copy-vendor.js",
     "presmoke": "node tools/copy-vendor.js",
-    "smoke:term": "electron . --windowed --smoke=smoke-output --smoke-term",
-    "smoke:games": "electron . --windowed --smoke=smoke-output --smoke-games",
-    "test:sudoku": "node tools/test-sudoku.js",
-    "smoke:system": "electron . --windowed --smoke=smoke-output --smoke-system",
-    "test:calc": "node tools/test-calc.js"
+    "predist": "node tools/copy-vendor.js",
+    "predist:dir": "node tools/copy-vendor.js",
+    "smoke:exit": "electron . --windowed --smoke=smoke-output --smoke-exit"
   },
   "author": "H-os",
   "license": "MIT",
   "devDependencies": {
     "@fontsource/nunito": "^5.3.0",
-    "electron": "^45.3.2"
-  },
-  "dependencies": {
-    "@lydell/node-pty": "^1.2.0-beta.18",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "chess.js": "^1.4.0",
     "stockfish": "^19.0.1"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.18"
+  },
+  "homepage": "https://github.com/",
+  "build": {
+    "appId": "com.hos.tulip",
+    "productName": "H-os",
+    "copyright": "H-os",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "mainSettings.js",
+      "mainFs.js",
+      "mainFsGuard.js",
+      "mainIpc.js",
+      "mainTerm.js",
+      "selftest.js",
+      "renderer/**/*",
+      "build/icon.png",
+      "package.json",
+      "!renderer/**/*.map"
+    ],
+    "asarUnpack": [
+      "node_modules/@lydell/**/*"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "H-os-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "H-os",
+      "artifactName": "H-os-Setup-${version}.exe",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "publish": null
   }
 }

@@ -1,0 +1,51 @@
+name: Build Windows exe
+
+# Builds the portable .exe and the installer on a Windows runner and uploads them as an artifact.
+# Run it from the Actions tab ("Run workflow"), on every push to main, or push a tag like v1.0.0.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests (path safety, sudoku, calculator)
+        run: npm run test:unit
+
+      - name: Build the .exe files
+        run: npm run dist
+
+      # Starts the real portable exe in health-check mode. Windows runners are not guaranteed to
+      # have a usable display, so this is informational and never fails the build.
+      - name: Self-test the portable exe
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'selftest.txt'
+          $exe = (Get-ChildItem dist -Filter '*-portable.exe' | Select-Object -First 1).FullName
+          $p = Start-Process -FilePath $exe -ArgumentList '--selftest', "--selftest-out=$out" -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill() }
+          if (Test-Path $out) { Get-Content $out } else { Write-Host 'no result file (no display available?)' }
+
+      - name: Upload the exe files
+        uses: actions/upload-artifact@v4
+        with:
+          name: H-os-windows
+          path: |
+            dist/*-portable.exe
+            dist/*-Setup-*.exe
+          if-no-files-found: error
