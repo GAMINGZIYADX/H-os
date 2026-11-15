@@ -19,3 +19,10 @@ Full docs (building the .exe, etc.) arrive in milestone 8.
 ## Credits
 - Font: [Nunito](https://github.com/googlefonts/nunito), SIL Open Font License (see `renderer/assets/fonts/`).
 - All icons and wallpapers are original (`tools/generate-wallpapers.js` builds the wallpapers).
+
+## Files & safety (File Explorer, Notepad, Image Viewer)
+- Everything touches the **real** disk, so the main process checks every path (`mainFsGuard.js`, `mainFs.js`).
+- **Delete = Recycle Bin only.** There is no permanent-delete function anywhere.
+- System places (`C:\Windows`, `C:\Program Files`, `/etc`, `/usr`, drive roots, your home folder itself, H-os's own folders…) can be *browsed* but never changed: "H-os protects these tulips".
+- H-os never launches programs (`.exe`, `.bat`, `.lnk`, …); double-clicking one shows a refusal.
+- Run the tests: `npm run test:guard` (pure path rules), `npm run smoke:fs` (real IPC against a sandbox folder), `npm run smoke` (the whole UI with real mouse/keyboard). The smoke tests send a few sandbox files to your real Recycle Bin.

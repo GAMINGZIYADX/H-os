@@ -20,6 +20,7 @@ export const DEFAULTS = {
   pinned: ['explorer', 'terminal', 'puzzles', 'notepad', 'settings'],
   desktopIcons: {},
   recent: [],
+  explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false },
 };
 
 const APPEARANCE_KEYS = ['theme', 'accent', 'wallpaper', 'taskbarAlign'];

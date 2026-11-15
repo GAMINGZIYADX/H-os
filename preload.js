@@ -18,6 +18,35 @@ contextBridge.exposeInMainWorld('hos', {
     save: (patch) => ipcRenderer.invoke('settings:save', patch),
   },
 
+  // Filesystem (all checked again in the main process; every call answers { ok, data } or { ok:false, error }).
+  fs: {
+    places: () => ipcRenderer.invoke('fs:places'),
+    drives: () => ipcRenderer.invoke('fs:drives'),
+    readdir: (dir, opts) => ipcRenderer.invoke('fs:readdir', dir, opts),
+    stat: (p) => ipcRenderer.invoke('fs:stat', p),
+    folderInfo: (p) => ipcRenderer.invoke('fs:folder-info', p),
+    mkdir: (parent, name) => ipcRenderer.invoke('fs:mkdir', parent, name),
+    rename: (p, newName) => ipcRenderer.invoke('fs:rename', p, newName),
+    conflicts: (sources, destDir) => ipcRenderer.invoke('fs:conflicts', sources, destDir),
+    paste: (mode, sources, destDir, onConflict) => ipcRenderer.invoke('fs:paste', mode, sources, destDir, onConflict),
+    readText: (p) => ipcRenderer.invoke('fs:read-text', p),
+    writeText: (p, text, eol) => ipcRenderer.invoke('fs:write-text', p, text, eol),
+    readImage: (p) => ipcRenderer.invoke('fs:read-image', p),
+  },
+
+  // Shell: delete goes to the Recycle Bin only (there is no permanent delete).
+  shell: {
+    openPath: (p) => ipcRenderer.invoke('shell:open-path', p),
+    trash: (paths) => ipcRenderer.invoke('shell:trash', paths),
+    openRecycleBin: () => ipcRenderer.invoke('shell:open-recycle-bin'),
+  },
+
+  // Native open/save dialogs.
+  dialog: {
+    openFile: (kind) => ipcRenderer.invoke('dialog:open-file', kind),
+    saveFile: (defaultName) => ipcRenderer.invoke('dialog:save-file', defaultName),
+  },
+
   // Version / platform info for "About H-os".
   getInfo: () => ipcRenderer.invoke('os:get-info'),
 

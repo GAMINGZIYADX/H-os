@@ -15,6 +15,7 @@ import { getSetting, setSetting } from './settingsStore.js';
 import { showContextMenu } from './contextMenu.js';
 import { toast } from './notifications.js';
 import { createMascot } from './mascot.js';
+import { fsApi } from './fsClient.js';
 
 const CELL_W = 92;
 const CELL_H = 104;
@@ -302,7 +303,15 @@ function onContextMenu(event) {
     {
       label: 'New folder',
       icon: 'folder-plus',
-      onSelect: () => toast({ title: 'New folder', message: 'Real folders arrive with File Explorer in milestone 4.', icon: 'explorer' }),
+      // Opens File Explorer on your real Desktop folder with a new folder ready to be named.
+      onSelect: async () => {
+        try {
+          const places = await fsApi.places();
+          launchApp('explorer', { path: places.desktop, newFolder: true });
+        } catch (err) {
+          toast({ title: 'New folder', message: err.message, icon: 'explorer' });
+        }
+      },
     },
     {
       label: 'Change wallpaper',

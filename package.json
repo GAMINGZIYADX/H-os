@@ -7,7 +7,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --windowed",
-    "smoke": "electron . --windowed --smoke"
+    "smoke": "electron . --windowed --smoke",
+    "smoke:fs": "electron . --windowed --smoke=smoke-output --smoke-fsapi",
+    "test:guard": "node tools/test-guard.js"
   },
   "author": "H-os",
   "license": "MIT",

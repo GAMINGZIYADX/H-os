@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-exports.run = function run({ win, dir, verify, settingsPath }) {
+exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi }) {
   const wc = win.webContents;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const js = (code) => wc.executeJavaScript(code);
@@ -53,17 +53,25 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
     if (release) mouse('mouseUp', x2, y2);
     await sleep(250);
   }
-  async function key(keyCode) {
-    wc.sendInputEvent({ type: 'keyDown', keyCode });
-    wc.sendInputEvent({ type: 'keyUp', keyCode });
+  async function key(keyCode, modifiers = []) {
+    wc.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+    wc.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
     await sleep(120);
   }
   async function type(text) {
     for (const ch of text) {
-      wc.sendInputEvent({ type: 'keyDown', keyCode: ch });
+      const code = ch === ' ' ? 'Space' : ch;
+      wc.sendInputEvent({ type: 'keyDown', keyCode: code });
       wc.sendInputEvent({ type: 'char', keyCode: ch });
-      wc.sendInputEvent({ type: 'keyUp', keyCode: ch });
-      await sleep(40);
+      wc.sendInputEvent({ type: 'keyUp', keyCode: code });
+      await sleep(25);
+    }
+  }
+  // press + release at a point (clickCount 2 = a proper double-click), optionally with Ctrl/Shift held
+  function mouseDownUp(x, y, modifiers = [], clickCount = 1) {
+    for (let c = 1; c <= clickCount; c++) {
+      wc.sendInputEvent({ type: 'mouseDown', x: Math.round(x), y: Math.round(y), button: 'left', clickCount: c, modifiers });
+      wc.sendInputEvent({ type: 'mouseUp', x: Math.round(x), y: Math.round(y), button: 'left', clickCount: c, modifiers });
     }
   }
 
@@ -105,6 +113,13 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
 
   wc.once('did-finish-load', async () => {
     try {
+      if (fsapi) { // filesystem API only (no UI): fast and safe
+        await sleep(500);
+        await require('./smokeFsApi').run({ js, check, sandbox });
+        console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL FS CHECKS PASSED'}`);
+        require('electron').app.exit(failures ? 1 : 0);
+        return;
+      }
       await enterShell();
 
       // ---------------------------------------------------------------- verify run
@@ -116,6 +131,7 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
         check('theme persisted (dark)', dom.theme === 'dark');
         check('taskbar align persisted (left)', dom.align === 'left');
         check('accent persisted (purple)', dom.accent === 'purple');
+        check('explorer view preference persisted (grid)', s.explorer && s.explorer.view === 'grid', JSON.stringify(s.explorer));
         const pos = await iconRects();
         console.log('[smoke] icon positions after restart:', JSON.stringify(pos));
         const saved = s.desktopIcons.terminal;
@@ -152,7 +168,7 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
       check('click on empty desktop deselects', (await js(`document.querySelectorAll('.desk-icon.is-selected').length`)) === 0);
 
       // ---------------------------------------------------------------- 4. double click -> toast
-      const n = await center('.desk-icon[data-app-id="notepad"]');
+      const n = await center('.desk-icon[data-app-id="puzzles"]'); // (still a placeholder app)
       await click(n.x, n.y);
       await click(n.x, n.y);
       await sleep(500);
@@ -353,6 +369,9 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
       await sleep(400);
       check('taskbar menu closes the last window', (await W()).length === 0 && (await js(`document.querySelectorAll('.win').length`)) === 0);
       check('unpinned app leaves the taskbar when closed', await js(`!document.querySelector('.tb-btn[data-app-id="wintest"]')`));
+
+      // ---------------------------------------------------------------- 8c. FILE EXPLORER / NOTEPAD / IMAGE VIEWER (milestone 4)
+      await require('./smokeExplorer').run({ js, check, snap, sleep, click, clickOn, center, key, type, sandbox, mouse, mouseDownUp });
 
       // ---------------------------------------------------------------- 9. settings: dark + left + purple
       await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left')`);

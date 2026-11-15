@@ -8,7 +8,8 @@
 //     defaultSize: { w: 640, h: 480 },
 //     keywords: 'text edit write',   // extra words Start-menu search matches
 //     desktop: true,                 // show an icon on the desktop?
-//     create(container, ctx) { … }   // builds the app UI inside a window (milestone 3+)
+//     create(container, ctx) { … }   // builds the app UI inside a window
+//     run(options) { … }             // OR: an action instead of a window (Recycle Bin)
 //   }
 //
 // The registry does NOT know how windows work. When something wants to open an
@@ -42,7 +43,9 @@ export function setLauncher(fn) {
 export function launchApp(id, options = {}) {
   const app = apps.get(id);
   if (!app) return;
-  if (launcher && app.create) {
+  if (app.run) {
+    app.run(options); // apps that aren't windows (e.g. the Recycle Bin shortcut)
+  } else if (launcher && app.create) {
     launcher(app, options);
   } else {
     toast({ title: app.name, message: 'Still blooming! This app arrives in a later milestone.', icon: app.icon });

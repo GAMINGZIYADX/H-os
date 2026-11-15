@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const mainSettings = require('./mainSettings');
+const mainFs = require('./mainFs');
 
 // ---- Command-line flags (for development / testing) -------------------------
 //   npm start                      -> real fullscreen H-os
@@ -30,6 +31,8 @@ const SMOKE_DIR = smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : 
 // because it is handled here in the main process. You can never be trapped.
 const EMERGENCY_ACCELERATOR = 'CommandOrControl+Alt+Shift+Q';
 
+// Smoke tests work on a throw-away sandbox folder next to the screenshots (NOT inside user-data, which is protected).
+const SMOKE_SANDBOX = SMOKE_DIR + '-sandbox';
 // Smoke tests use their own throw-away user-data folder, never your real settings.
 if (SMOKE) app.setPath('userData', path.join(SMOKE_DIR, 'userdata'));
 
@@ -163,6 +166,10 @@ function registerIpc() {
     app.quit();
   });
 
+  // Filesystem / shell / dialogs (mainFs.js). In smoke tests a folder inside the sandbox is declared
+  // protected, so the guard can be tested for real without ever touching actual system folders.
+  mainFs.register({ extraProtectedTrees: SMOKE ? [path.join(SMOKE_SANDBOX, 'protected-zone')] : [] });
+
   // Settings: load everything / save a partial update (validated in mainSettings.js).
   ipcMain.handle('settings:load', () => mainSettings.load());
   ipcMain.handle('settings:save', (event, patch) => mainSettings.save(patch));
@@ -189,6 +196,8 @@ app.whenReady().then(() => {
     require('./smoke').run({
       win: mainWindow,
       dir: SMOKE_DIR,
+      sandbox: SMOKE_SANDBOX,
+      fsapi: process.argv.includes('--smoke-fsapi'), // only test the filesystem API, then exit
       verify: process.argv.includes('--smoke-verify'), // 2nd run: check that settings survived
       requestShutdownDialog,
       emergencyExit,

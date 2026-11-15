@@ -24,6 +24,7 @@ const DEFAULTS = {
   pinned: ['explorer', 'terminal', 'puzzles', 'notepad', 'settings'], // taskbar pins (app ids)
   desktopIcons: {},                                                    // { appId: { col, row } }
   recent: [],                                                          // [{ name, path, time }]
+  explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false }, // File Explorer preferences
 };
 
 // Settings that may only be one of a few allowed words.
@@ -33,6 +34,7 @@ const ENUMS = {
   wallpaper: ['day', 'dusk', 'pastel'],
   taskbarAlign: ['center', 'left'],
 };
+const EXPLORER_ENUMS = { view: ['details', 'list', 'grid'], sortKey: ['name', 'date', 'size', 'type'], sortDir: ['asc', 'desc'] };
 
 const ID_PATTERN = /^[a-z0-9-]{1,40}$/; // app ids: lowercase letters, digits, dashes
 
@@ -69,6 +71,14 @@ function sanitize(input) {
       .filter((r) => r && typeof r.name === 'string' && typeof r.path === 'string' && r.name.length <= 260 && r.path.length <= 1024)
       .slice(0, 12)
       .map((r) => ({ name: r.name, path: r.path, time: Number.isFinite(r.time) ? r.time : Date.now() }));
+  }
+
+  if (input.explorer && typeof input.explorer === 'object' && !Array.isArray(input.explorer)) {
+    const e = input.explorer;
+    const ex = {};
+    for (const [k, allowed] of Object.entries(EXPLORER_ENUMS)) if (allowed.includes(e[k])) ex[k] = e[k];
+    if (typeof e.showHidden === 'boolean') ex.showHidden = e.showHidden;
+    out.explorer = { ...DEFAULTS.explorer, ...ex };
   }
 
   return out;

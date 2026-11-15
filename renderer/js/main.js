@@ -13,6 +13,12 @@ import { initDesktop, layoutIcons } from './desktop.js';
 import { initTaskbar } from './taskbar.js';
 import { initWindowManager, debugWindows } from './windowManager.js';
 import { registerWindowTest } from './apps/windowTest.js';
+import { registerExplorer } from './apps/explorer.js';
+import { registerNotepad } from './apps/notepad.js';
+import { registerImageViewer } from './apps/imageviewer.js';
+import { registerRecycleBin } from './apps/recycle.js';
+import { openFileSmart } from './fileOpen.js';
+import { launchApp } from './appRegistry.js';
 import { initStartMenu, closeStartMenu } from './startmenu.js';
 import { closeContextMenu } from './contextMenu.js';
 import * as events from './events.js';
@@ -49,6 +55,10 @@ async function wakeFromSleep() {
 async function init() {
   await loadSettings();           // theme, wallpaper, icon positions… from settings.json
   registerBuiltinApps();          // must come before the pieces that list apps
+  registerExplorer();
+  registerNotepad();
+  registerImageViewer();
+  registerRecycleBin();
   registerWindowTest();           // temporary demo app for the window manager (removed later)
   initWindowManager();            // from now on launchApp() opens real windows
   initPower();
@@ -56,12 +66,13 @@ async function init() {
   initTaskbar();
   await initStartMenu();
 
+  events.on('file:open', (entry) => openFileSmart(entry.path)); // from the Start menu's Recommended list
   events.on('power:restart', startSession);
   events.on('power:wake', wakeFromSleep);
 
   // Development only (npm run dev): expose a few things so tests can poke at the shell.
   const info = window.hos ? await window.hos.getInfo() : { windowed: true };
-  if (info.windowed) window.__hos = { events, settings: settingsStore, windows: debugWindows };
+  if (info.windowed) window.__hos = { events, settings: settingsStore, windows: debugWindows, launch: launchApp };
 
   await startSession();
 }
