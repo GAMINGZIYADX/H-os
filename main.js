@@ -27,7 +27,7 @@ const { trusted } = require('./mainIpc');
 const SELFTEST = process.argv.includes('--selftest'); // health check of the real app (selftest.js), then exit
 const WINDOWED = process.argv.includes('--windowed') || SELFTEST;
 const smokeArg = process.argv.find((a) => a === '--smoke' || a.startsWith('--smoke='));
-const SMOKE = Boolean(smokeArg);
+const SMOKE = Boolean(smokeArg) && !app.isPackaged; // the test harness is for development only: a built .exe ignores --smoke (it also wipes its settings folder)
 const SMOKE_DIR = path.resolve(smokeArg && smokeArg.includes('=') ? smokeArg.split('=')[1] : path.join(__dirname, 'smoke-output')); // (absolute, because Electron insists on that for userData)
 
 // The emergency exit keys. Works even if the renderer is frozen or crashed,

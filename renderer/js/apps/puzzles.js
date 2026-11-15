@@ -34,7 +34,7 @@ export function registerPuzzlesHub() {
     icon: 'puzzles',
     desktop: true,
     keywords: 'games sudoku chess play puzzles number match sweep merge snake memory bloom',
-    defaultSize: { w: 640, h: 500 },
+    defaultSize: { w: 640, h: 620 },
     minSize: { w: 360, h: 260 },
     singleInstance: true,
     create,
