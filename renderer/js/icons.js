@@ -53,6 +53,9 @@ const UI_PATHS = {
   pin: '<path d="M9 4h6l-1 6 3 3H7l3-3Z"/><path d="M12 13v7"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  'win-min': '<path d="M5 12h14"/>',
+  'win-max': '<rect x="5" y="5" width="14" height="14" rx="2.5"/>',
+  'win-restore': '<rect x="4" y="9" width="11" height="11" rx="2.5"/><path d="M9 9V7.5A2.5 2.5 0 0 1 11.5 5h5A2.5 2.5 0 0 1 19 7.5v5a2.5 2.5 0 0 1-2.5 2.5H15"/>',
 };
 
 const UI_WRAP = (inner) =>

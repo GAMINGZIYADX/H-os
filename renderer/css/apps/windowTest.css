@@ -1,0 +1,12 @@
+/* Styles for the temporary Window Test app. */
+.wt { height: 100%; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.wt-title { margin: 0; font-size: 20px; font-weight: 800; }
+.wt-text { margin: 0; color: var(--text-muted); line-height: 1.5; }
+.wt-info { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-hover); }
+.wt-row { display: flex; justify-content: space-between; font-size: 13px; }
+.wt-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.wt-buttons .btn { min-width: 0; }
+.wt-input { padding: 8px 12px; border: 1px solid var(--divider); border-radius: var(--radius-md); background: var(--surface-solid); color: var(--text); font: inherit; }
+.wt-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.wt-list { flex: 1; min-height: 40px; overflow: auto; border: 1px solid var(--divider); border-radius: var(--radius-md); padding: 6px 10px; }
+.wt-item { padding: 3px 0; color: var(--text-muted); }

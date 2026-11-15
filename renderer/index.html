@@ -16,16 +16,19 @@
     <link rel="stylesheet" href="css/shell.css" />
     <link rel="stylesheet" href="css/desktop.css" />
     <link rel="stylesheet" href="css/taskbar.css" />
+    <link rel="stylesheet" href="css/windows.css" />
     <link rel="stylesheet" href="css/menus.css" />
+    <link rel="stylesheet" href="css/apps/windowTest.css" />
   </head>
   <body>
     <!-- Layer 0: wallpaper (image chosen by data-wallpaper on <html>) -->
     <div id="wallpaper" class="wallpaper"></div>
 
     <!-- Layer 1: the shell = desktop + taskbar + Start menu. Hidden until you pass the
-         lock screen. (Milestone 3 adds a window layer between the desktop and the taskbar.) -->
+         lock screen. Windows live in #windows-layer, between the desktop and the taskbar. -->
     <div id="shell" class="shell" hidden>
       <main id="desktop" class="desktop"></main>
+      <div id="windows-layer" class="windows-layer"></div>
       <footer id="taskbar" class="taskbar"></footer>
       <div id="start-menu" class="start-menu is-closed"></div>
     </div>

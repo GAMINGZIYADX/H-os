@@ -91,7 +91,7 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
   setTimeout(() => {
     console.log('[smoke] FAILED: timed out (app did not quit by itself)');
     require('electron').app.exit(1);
-  }, 90000);
+  }, 180000);
 
   async function enterShell() {
     await sleep(900);
@@ -130,7 +130,7 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
       await snap('01-desktop.png');
       const before = await iconRects();
       console.log('[smoke] icons at start:', JSON.stringify(before));
-      check('6 desktop icons', Object.keys(before).length === 6);
+      check('7 desktop icons', Object.keys(before).length === 7);
 
       // ---------------------------------------------------------------- 2. drag an icon
       const t = await center('.desk-icon[data-app-id="terminal"]');
@@ -222,6 +222,137 @@ exports.run = function run({ win, dir, verify, settingsPath }) {
       await clickOn('.tb-btn[data-app-id="terminal"]');
       check('click running app emits window:toggle', (await js(`window.__toggled`)) === 1);
       await js(`window.__hos.events.emit('windows:changed', [])`);
+
+      // ---------------------------------------------------------------- 8b. WINDOW MANAGER (milestone 3)
+      const W = () => js(`window.__hos.windows()`);
+      const winOf = async (id) => (await W()).find((w) => w.id === id);
+      const LW = 1280, LH = 800 - 48; // layer = screen above the taskbar (windowed 1280x800)
+
+      // open from the desktop icon (double-click)
+      const wtIcon = await center('.desk-icon[data-app-id="wintest"]');
+      await click(wtIcon.x, wtIcon.y);
+      await click(wtIcon.x, wtIcon.y);
+      await sleep(600);
+      let list = await W();
+      check('double-click opens a real window', list.length === 1 && list[0].focused, JSON.stringify(list));
+      check('taskbar shows it running + active', await js(`!!document.querySelector('.tb-btn[data-app-id="wintest"].is-running.is-active')`));
+      await snap('20-first-window.png');
+
+      // second window: z-order + focus
+      await clickOn('.wt-buttons .btn', 'Open another');
+      await sleep(500);
+      list = await W();
+      check('second window opens on top', list.length === 2 && list[1].focused && list[1].z > list[0].z, JSON.stringify(list));
+      await click(200, 55);                                   // first window's visible titlebar
+      list = await W();
+      check('clicking a window brings it to front', list[0].focused && list[0].z > list[1].z);
+      await snap('21-two-windows.png');
+
+      // drag by titlebar (also records frame timing for smoothness)
+      await js(`window.__f = []; window.__run = true; (function loop() { if (!window.__run) return; window.__f.push(performance.now()); requestAnimationFrame(loop); })(); 0`);
+      let w1 = await winOf(list[0].id);
+      await drag(200, 55, 200 + 150, 55 + 100);
+      let w1b = await winOf(w1.id);
+      check('drag moves window by the mouse delta', w1b.x === w1.x + 150 && w1b.y === w1.y + 100, `${w1.x},${w1.y} -> ${w1b.x},${w1b.y}`);
+      const frames = await js(`window.__run = false; (() => { const f = window.__f; const d = f.slice(1).map((t, i) => t - f[i]); return { n: d.length, mean: d.reduce((a, b) => a + b, 0) / d.length, max: Math.max(...d), slow: d.filter((x) => x > 25).length }; })()`);
+      console.log('[smoke] frame timing during drag:', JSON.stringify(frames));
+      check('dragging keeps ~60fps (mean frame < 20ms)', frames.mean < 20, JSON.stringify(frames));
+
+      // resize: SE corner, W edge, NW corner down to min size
+      w1 = await winOf(w1.id);
+      await drag(w1.x + w1.w - 2, w1.y + w1.h - 2, w1.x + w1.w + 78, w1.y + w1.h + 48);
+      w1b = await winOf(w1.id);
+      check('SE corner grows the window', w1b.w === w1.w + 80 && w1b.h === w1.h + 50 && w1b.x === w1.x, `${w1.w}x${w1.h} -> ${w1b.w}x${w1b.h}`);
+      w1 = w1b;
+      await drag(w1.x + 1, w1.y + 150, w1.x - 59, w1.y + 150);
+      w1b = await winOf(w1.id);
+      check('W edge grows left (x moves, right edge fixed)', w1b.w === w1.w + 60 && w1b.x === w1.x - 60 && w1b.y === w1.y, `${w1.x}/${w1.w} -> ${w1b.x}/${w1b.w}`);
+      w1 = w1b;
+      await drag(w1.x + 1, w1.y + 1, w1.x + 900, w1.y + 700);
+      w1b = await winOf(w1.id);
+      check('NW corner stops at the minimum size (360x260)', w1b.w === 360 && w1b.h === 260 && w1b.x + w1b.w === w1.x + w1.w && w1b.y + w1b.h === w1.y + w1.h, JSON.stringify(w1b));
+      await snap('22-resized-min.png');
+
+      // maximize / restore by double-clicking the titlebar
+      w1 = await winOf(w1.id);
+      await click(w1.x + 150, w1.y + 15, 'left', 2);
+      await sleep(80);
+      await click(w1.x + 150, w1.y + 15, 'left', 2);
+      await sleep(450);
+      w1b = await winOf(w1.id);
+      check('double-click titlebar maximizes', w1b.state === 'maximized' && w1b.w === LW && w1b.h === LH && w1b.x === 0 && w1b.y === 0, JSON.stringify(w1b));
+      await snap('23-maximized.png');
+      await click(400, 15, 'left', 2);
+      await sleep(80);
+      await click(400, 15, 'left', 2);
+      await sleep(450);
+      w1b = await winOf(w1.id);
+      check('double-click again restores the old bounds', w1b.state === 'normal' && w1b.x === w1.x && w1b.y === w1.y && w1b.w === w1.w && w1b.h === w1.h, JSON.stringify(w1b));
+
+      // snap left / right / maximize by dragging to the edges
+      w1 = w1b;
+      await drag(w1.x + 100, w1.y + 15, 2, 300, { release: false });
+      check('snap preview appears near the left edge', await js(`document.querySelector('.snap-preview').classList.contains('is-visible')`));
+      await snap('24-snap-preview.png');
+      mouse('mouseUp', 2, 300);
+      await sleep(450);
+      w1b = await winOf(w1.id);
+      check('snapped to left half', w1b.state === 'snapped' && w1b.x === 0 && w1b.w === LW / 2 && w1b.h === LH, JSON.stringify(w1b));
+      await snap('25-snapped-left.png');
+      await drag(200, 15, LW - 2, 300);
+      await sleep(400);
+      w1b = await winOf(w1.id);
+      check('snapped to right half', w1b.state === 'snapped' && w1b.x === LW / 2 && w1b.w === LW / 2, JSON.stringify(w1b));
+      await drag(LW - 200, 15, 600, 1);
+      await sleep(400);
+      w1b = await winOf(w1.id);
+      check('dragging to the top maximizes', w1b.state === 'maximized', JSON.stringify(w1b));
+      await drag(600, 15, 600, 215);
+      await sleep(300);
+      w1b = await winOf(w1.id);
+      check('dragging a maximized window restores its old size', w1b.state === 'normal' && w1b.w === w1.w && w1b.h === w1.h, JSON.stringify(w1b));
+
+      // can't go under the taskbar / off the top
+      w1 = w1b;
+      await drag(w1.x + 100, w1.y + 15, w1.x + 100, 790, { release: false });
+      w1b = await winOf(w1.id);
+      check('window cannot be dragged under the taskbar', w1b.y + 38 <= LH, `y=${w1b.y}`);
+      mouse('mouseMove', w1.x + 100, 300, { modifiers: ['leftButtonDown'] });
+      await sleep(100);
+      mouse('mouseUp', w1.x + 100, 300);
+      await sleep(200);
+
+      // minimize / restore via buttons and taskbar
+      await clickOn('.win.is-focused .win-ctrl[title="Minimize"]');
+      await sleep(500);
+      list = await W();
+      check('minimize hides the window and focus moves on', list.filter((w) => w.minimized).length === 1 && list.some((w) => w.focused && !w.minimized), JSON.stringify(list));
+      check('minimized window is display:none', await js(`!!document.querySelector('.win.is-hidden')`));
+      await snap('26-one-minimized.png');
+      await clickOn('.tb-btn[data-app-id="wintest"]');            // focused window -> minimize it too
+      await sleep(500);
+      check('taskbar click on focused app minimizes it', (await W()).every((w) => w.minimized));
+      await clickOn('.tb-btn[data-app-id="wintest"]');            // nothing focused -> restore
+      await sleep(500);
+      list = await W();
+      check('taskbar click restores a minimized window', list.some((w) => !w.minimized && w.focused));
+      await clickOn('.tb-show-desktop');
+      await sleep(500);
+      check('show desktop minimizes everything', (await W()).every((w) => w.minimized));
+      await snap('27-show-desktop.png');
+      await clickOn('.tb-show-desktop');
+      await sleep(500);
+      check('show desktop again restores what it hid', (await W()).some((w) => !w.minimized && w.focused));
+
+      // close
+      await clickOn('.win.is-focused .win-ctrl.is-close');
+      await sleep(400);
+      check('close button removes the window', (await W()).length === 1);
+      await clickOn('.tb-btn[data-app-id="wintest"]', '', 'right');
+      await clickOn('.ctx-item', 'Close window');
+      await sleep(400);
+      check('taskbar menu closes the last window', (await W()).length === 0 && (await js(`document.querySelectorAll('.win').length`)) === 0);
+      check('unpinned app leaves the taskbar when closed', await js(`!document.querySelector('.tb-btn[data-app-id="wintest"]')`));
 
       // ---------------------------------------------------------------- 9. settings: dark + left + purple
       await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left')`);

@@ -1,0 +1,129 @@
+/* =============================================================================
+   windows.css — the window frame (titlebar, buttons, resize handles, snap preview)
+   Performance notes: windows move with `translate` (no re-layout) and use NO
+   backdrop-filter, so dragging several windows stays at 60fps.
+   ============================================================================= */
+
+.windows-layer {
+  position: fixed;
+  inset: 0 0 var(--taskbar-height) 0;  /* the area above the taskbar */
+  z-index: var(--z-windows);
+  overflow: hidden;
+  pointer-events: none;                /* empty space clicks fall through to the desktop */
+}
+
+.win {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--text);
+  background: var(--surface-solid);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  outline: none;
+}
+.win.is-focused {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: var(--shadow-lg);
+}
+.win.is-dragging { will-change: translate; box-shadow: var(--shadow-lg); }
+.win.is-animating { transition: translate var(--dur) var(--ease), width var(--dur) var(--ease), height var(--dur) var(--ease); }
+.win.is-hidden { display: none; }
+
+/* flush with the screen when maximized or snapped */
+.win.is-maximized, .win.is-snapped { border-radius: 0; border-width: 0; }
+.win.is-maximized .win-titlebar, .win.is-snapped .win-titlebar { border-radius: 0; }
+.win.is-maximized .win-body, .win.is-snapped .win-body { border-radius: 0; }
+
+/* ---- Titlebar ---- */
+.win-titlebar {
+  flex: none;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 12px;
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  background: color-mix(in srgb, var(--surface-solid) 78%, var(--tulip-pink-light));
+  touch-action: none;
+}
+:root[data-theme='dark'] .win-titlebar { background: color-mix(in srgb, var(--surface-solid) 85%, #000); }
+.win-icon svg { display: block; width: 18px; height: 18px; }
+.win-icon .tulip-icon { width: 14px; height: auto; }
+.win-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.6; }
+.win.is-focused .win-title { opacity: 1; }
+
+.win-controls { display: flex; align-self: stretch; }
+.win-ctrl {
+  width: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  transition: background var(--dur-fast);
+}
+.win-ctrl:hover { background: var(--surface-hover); }
+.win-ctrl:active { background: var(--surface-pressed); }
+.win-ctrl .icon svg { display: block; width: 14px; height: 14px; }
+.win-ctrl.is-close { border-top-right-radius: calc(var(--radius-lg) - 1px); }
+.win.is-maximized .win-ctrl.is-close, .win.is-snapped .win-ctrl.is-close { border-radius: 0; }
+.win-ctrl.is-close:hover { background: #d6313f; color: #fff; }
+
+/* ---- Body: the app's container ---- */
+.win-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  contain: layout paint;   /* the app's layout work can't spill into the rest of the page */
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+  user-select: text;
+}
+.win-error { padding: 28px; text-align: center; color: var(--text-muted); font-weight: 600; }
+
+/* ---- Resize handles (invisible; just show the right cursor) ---- */
+.win-handle { position: absolute; z-index: 2; touch-action: none; }
+.win-handle-n  { top: -4px;    left: 12px;  right: 12px;  height: 8px; cursor: ns-resize; }
+.win-handle-s  { bottom: -4px; left: 12px;  right: 12px;  height: 8px; cursor: ns-resize; }
+.win-handle-e  { right: -4px;  top: 12px;   bottom: 12px; width: 8px;  cursor: ew-resize; }
+.win-handle-w  { left: -4px;   top: 12px;   bottom: 12px; width: 8px;  cursor: ew-resize; }
+.win-handle-ne { top: -4px;    right: -4px;  width: 14px; height: 14px; cursor: nesw-resize; }
+.win-handle-sw { bottom: -4px; left: -4px;   width: 14px; height: 14px; cursor: nesw-resize; }
+.win-handle-nw { top: -4px;    left: -4px;   width: 14px; height: 14px; cursor: nwse-resize; }
+.win-handle-se { bottom: -4px; right: -4px;  width: 14px; height: 14px; cursor: nwse-resize; }
+.win.is-maximized .win-handle, .win.is-snapped .win-handle { display: none; }
+/* while resizing, keep the app from stealing the mouse */
+.win.is-resizing .win-body { pointer-events: none; }
+
+/* ---- Animations: open, close, minimize, restore ---- */
+.win.is-opening { animation: win-open 200ms var(--ease) both; }
+.win.is-closing { animation: win-close 170ms ease-in both; }
+.win.is-minimizing { transform: scale(0.15); opacity: 0; pointer-events: none; transition: transform 220ms var(--ease), opacity 200ms ease; }
+.win.is-restoring { animation: win-restore 230ms var(--ease) both; }
+@keyframes win-open    { from { opacity: 0; transform: scale(0.94) translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes win-close   { to   { opacity: 0; transform: scale(0.95); } }
+@keyframes win-restore { from { opacity: 0; transform: scale(0.15); } to { opacity: 1; transform: none; } }
+
+/* ---- Snap preview (the pink ghost shown while dragging to an edge) ---- */
+.snap-preview {
+  position: absolute;
+  z-index: 5000;
+  border: 2px solid var(--accent-soft);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent-soft) 26%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease, left 150ms var(--ease), top 150ms var(--ease), width 150ms var(--ease), height 150ms var(--ease);
+}
+.snap-preview.is-visible { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .win.is-opening, .win.is-closing, .win.is-restoring { animation-duration: 1ms; }
+}
