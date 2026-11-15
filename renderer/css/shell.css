@@ -1,0 +1,296 @@
+/* =============================================================================
+   shell.css — the "screens" of H-os: wallpaper, boot, lock, desktop
+   placeholder, shutdown dialog and goodbye. (Taskbar etc. arrive in milestone 2.)
+   Only uses variables from theme.css, so recoloring happens there.
+   ============================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* The HTML `hidden` attribute must always win, even over display:flex. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;            /* an OS never scrolls its own page */
+  background: var(--tulip-pink-light);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;           /* nothing selects by accident (apps re-enable inside themselves) */
+  cursor: default;
+}
+
+button { font: inherit; color: inherit; }
+
+/* Layers, bottom to top. Using one list keeps the stacking order easy to read. */
+:root {
+  --z-wallpaper: 0;
+  --z-desktop: 10;
+  --z-lock: 5000;
+  --z-boot: 8000;
+  --z-dialog: 9000;
+  --z-goodbye: 9500;
+}
+
+/* ---------------------------------------------------------------------------
+   Wallpaper — one full-screen div whose image depends on data-wallpaper
+   --------------------------------------------------------------------------- */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-wallpaper);
+  background: var(--tulip-pink-light) center / cover no-repeat;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+:root[data-wallpaper='day']    .wallpaper { background-image: url('../assets/wallpapers/tulip-day.svg'); }
+:root[data-wallpaper='dusk']   .wallpaper { background-image: url('../assets/wallpapers/tulip-dusk.svg'); }
+:root[data-wallpaper='pastel'] .wallpaper { background-image: url('../assets/wallpapers/pastel.svg'); }
+
+/* ---------------------------------------------------------------------------
+   Boot screen
+   --------------------------------------------------------------------------- */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-boot);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--boot-bg);
+  color: var(--boot-text);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.boot.is-leaving { opacity: 0; pointer-events: none; }
+
+.boot-logo { width: 168px; height: auto; overflow: visible; filter: drop-shadow(0 10px 24px rgba(194, 48, 107, 0.28)); }
+.boot-title { margin: 6px 0 0; font-size: 34px; font-weight: 800; letter-spacing: 0.5px; opacity: 0; }
+.boot-status { margin: 0; min-height: 20px; font-size: 14px; font-weight: 600; opacity: 0; }
+
+.boot-bar {
+  width: 240px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(194, 48, 107, 0.16);
+  overflow: hidden;
+  opacity: 0;
+}
+.boot-bar-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--tulip-pink), var(--tulip-magenta));
+  transform-origin: left center;
+  transform: scaleX(0);        /* boot.js animates this from 0 to 1 */
+}
+.boot-hint { position: absolute; bottom: 28px; margin: 0; font-size: 12px; opacity: 0; }
+
+/* Petal colours (shared by the animated logo and the small static icons) */
+.boot-logo .stem, .tulip-icon .stem { stroke: var(--leaf-deep); }
+.boot-logo .leaf-l, .tulip-icon .leaf-l { fill: var(--leaf); }
+.boot-logo .leaf-r, .tulip-icon .leaf-r { fill: #82c792; }
+.boot-logo .petal-l, .boot-logo .petal-r, .tulip-icon .petal-l, .tulip-icon .petal-r { fill: #e0709e; }
+.boot-logo .petal-c, .tulip-icon .petal-c { fill: var(--tulip-pink); }
+.boot-logo .shine, .tulip-icon .shine { fill: #fff; opacity: 0.45; }
+.boot-logo .sparkle { fill: var(--tulip-magenta); }
+/* Static icon = the logo at rest, fully bloomed. */
+.tulip-icon { overflow: visible; }
+.tulip-icon .petal-l { transform-origin: 50px 72px; transform: rotate(-9deg); }
+.tulip-icon .petal-r { transform-origin: 50px 72px; transform: rotate(9deg); }
+.tulip-icon .sparkle { display: none; }
+
+/* Tulip bloom: pieces of the logo (see index.html) animate only while
+   .is-running is on the boot element; removing/re-adding it replays everything. */
+/* Logo pieces: rotate/scale around points given in the logo's own coordinates. */
+.boot-logo *, .tulip-icon * { transform-box: view-box; }
+.boot-logo .stem  { transform-origin: 50px 128px; transform: scaleY(0); }
+.boot-logo .leaf-l { transform-origin: 50px 124px; transform: scale(0); }
+.boot-logo .leaf-r { transform-origin: 50px 124px; transform: scale(0); }
+.boot-logo .petal-l { transform-origin: 50px 72px; transform: rotate(26deg) scale(0.2); }
+.boot-logo .petal-r { transform-origin: 50px 72px; transform: rotate(-26deg) scale(0.2); }
+.boot-logo .petal-c { transform-origin: 50px 74px; transform: scale(0.2); }
+.boot-logo .sparkle { transform-box: fill-box; transform-origin: center; opacity: 0; }
+
+.boot.is-running .stem    { animation: grow-stem 700ms var(--ease) 100ms forwards; }
+.boot.is-running .leaf-l  { animation: pop-in 600ms var(--ease) 500ms forwards; }
+.boot.is-running .leaf-r  { animation: pop-in 600ms var(--ease) 600ms forwards; }
+.boot.is-running .petal-c { animation: open-center 900ms var(--ease) 750ms forwards; }
+.boot.is-running .petal-l { animation: open-left 900ms var(--ease) 850ms forwards; }
+.boot.is-running .petal-r { animation: open-right 900ms var(--ease) 850ms forwards; }
+.boot.is-running .sparkle { animation: sparkle 900ms ease-out forwards; }
+.boot.is-running .boot-title  { animation: fade-up 600ms var(--ease) 900ms forwards; }
+.boot.is-running .boot-bar    { animation: fade-in 400ms ease 600ms forwards; }
+.boot.is-running .boot-status { animation: fade-in 400ms ease 700ms forwards; }
+.boot.is-running .boot-hint   { animation: fade-in 600ms ease 1200ms forwards; }
+
+@keyframes grow-stem   { to { transform: scaleY(1); } }
+@keyframes pop-in      { to { transform: scale(1); } }
+@keyframes open-center { 0% { transform: scale(0.2); } 70% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes open-left   { 0% { transform: rotate(26deg) scale(0.2); } 70% { transform: rotate(-14deg) scale(1); } 100% { transform: rotate(-9deg) scale(1); } }
+@keyframes open-right  { 0% { transform: rotate(-26deg) scale(0.2); } 70% { transform: rotate(14deg) scale(1); } 100% { transform: rotate(9deg) scale(1); } }
+@keyframes sparkle     { 0% { opacity: 0; transform: scale(0.2); } 40% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(0.6); } }
+@keyframes fade-in     { to { opacity: 1; } }
+@keyframes fade-up     { from { transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------------------------------------------------------------------------
+   Lock screen
+   --------------------------------------------------------------------------- */
+.lock {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-lock);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11vh 0 9vh;
+  color: var(--text-on-wallpaper);
+  text-shadow: 0 2px 22px rgba(120, 30, 80, 0.45);
+  /* a gentle scrim so white text stays readable on bright wallpapers */
+  background: linear-gradient(180deg, rgba(120, 30, 80, 0.14) 0%, rgba(120, 30, 80, 0) 45%, rgba(120, 30, 80, 0.16) 100%);
+  cursor: pointer;
+  transition: transform 520ms var(--ease), opacity 420ms ease;
+}
+.lock.is-entering { animation: lock-in 500ms var(--ease) both; }
+.lock.is-leaving { transform: translateY(-14%); opacity: 0; pointer-events: none; }
+@keyframes lock-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: none; } }
+
+.lock-top { text-align: center; }
+.lock-time { font-size: clamp(88px, 15vw, 190px); font-weight: 800; line-height: 1; letter-spacing: -2px; }
+.lock-date { margin-top: 6px; font-size: clamp(18px, 2.2vw, 28px); font-weight: 700; }
+.lock-greeting { margin-top: 18px; font-size: clamp(15px, 1.5vw, 19px); font-weight: 600; opacity: 0.92; }
+
+.lock-enter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 26px 12px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  text-shadow: none;
+  font-size: 16px;
+  font-weight: 700;
+  animation: bob 2.6s ease-in-out infinite;
+}
+.lock-enter svg { width: 26px; height: 26px; }
+.lock:hover .lock-enter { background: var(--surface-strong); }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ---------------------------------------------------------------------------
+   Desktop placeholder (replaced by the real desktop in milestone 2)
+   --------------------------------------------------------------------------- */
+.desktop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-desktop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.desktop-card {
+  max-width: 420px;
+  padding: 26px 30px;
+  text-align: center;
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: card-in 600ms var(--ease) both;
+}
+.desktop-card h1 { margin: 0 0 6px; font-size: 24px; font-weight: 800; }
+.desktop-card p { margin: 6px 0; color: var(--text-muted); line-height: 1.5; }
+.desktop-card kbd {
+  padding: 1px 7px; border-radius: var(--radius-sm); font-family: var(--font); font-weight: 700; font-size: 12px;
+  background: var(--surface-solid); border: 1px solid var(--divider); box-shadow: 0 1px 0 var(--divider); color: var(--text);
+}
+@keyframes card-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ---------------------------------------------------------------------------
+   Dialog (shutdown question) — will be reused for other confirmations
+   --------------------------------------------------------------------------- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(58, 20, 48, 0.28);
+  animation: fade-in-bg 200ms ease both;
+}
+@keyframes fade-in-bg { from { opacity: 0; } to { opacity: 1; } }
+
+.dialog {
+  width: min(380px, 90vw);
+  padding: 26px 26px 20px;
+  text-align: center;
+  background: var(--surface-strong);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: dialog-in var(--dur) var(--ease) both;
+}
+@keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+.dialog-icon { width: 52px; height: 52px; margin-bottom: 6px; }
+.dialog h2 { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+.dialog p { margin: 0 0 20px; color: var(--text-muted); line-height: 1.5; }
+.dialog-actions { display: flex; gap: 10px; justify-content: center; }
+
+.btn {
+  min-width: 112px;
+  padding: 9px 18px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-solid);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur-fast), transform var(--dur-fast);
+}
+.btn:hover { background: var(--surface-hover); }
+.btn:active { transform: scale(0.97); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-primary { background: var(--accent); border-color: transparent; color: var(--accent-contrast); }
+.btn-primary:hover { background: var(--accent-hover); }
+
+/* ---------------------------------------------------------------------------
+   Goodbye (shown while shutting down)
+   --------------------------------------------------------------------------- */
+.goodbye {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-goodbye);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--goodbye-bg);
+  color: var(--goodbye-text);
+  animation: fade-in-bg 700ms ease both;
+}
+.goodbye .boot-logo { width: 120px; }
+.goodbye h2 { margin: 0; font-size: 26px; font-weight: 800; animation: fade-up 700ms var(--ease) 400ms both; }
+/* Tulip "closes" for the night: the same logo pieces, played in reverse spirit. */
+.goodbye .stem, .goodbye .leaf-l, .goodbye .leaf-r { transform: none; }
+.goodbye .petal-c { transform: scale(1); }
+.goodbye .petal-l { transform: rotate(-9deg); animation: close-left 1100ms var(--ease) 500ms forwards; }
+.goodbye .petal-r { transform: rotate(9deg); animation: close-right 1100ms var(--ease) 500ms forwards; }
+@keyframes close-left  { to { transform: rotate(26deg) scale(0.95); } }
+@keyframes close-right { to { transform: rotate(-26deg) scale(0.95); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lock-enter, .boot .boot-logo * { animation: none !important; }
+}

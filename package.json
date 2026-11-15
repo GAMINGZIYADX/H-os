@@ -1,0 +1,18 @@
+{
+  "name": "h-os",
+  "productName": "H-os",
+  "version": "0.1.0",
+  "description": "H-os: a cute tulip-themed Windows 11-style desktop that runs as a fullscreen app.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --windowed",
+    "smoke": "electron . --windowed --smoke"
+  },
+  "author": "H-os",
+  "license": "MIT",
+  "devDependencies": {
+    "@fontsource/nunito": "^5.3.0",
+    "electron": "^45.3.2"
+  }
+}

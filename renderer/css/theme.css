@@ -1,0 +1,111 @@
+/* =============================================================================
+   H-os THEME  —  every color, radius, shadow and timing lives here.
+   Change a value in this file and the whole "OS" changes with it.
+
+   How it works: CSS "custom properties" (variables) are declared on :root and
+   used everywhere with var(--name). The <html> tag carries two attributes that
+   switch variants:   data-theme="light|dark"   data-accent="pink|red|..."
+   ============================================================================= */
+
+:root {
+  /* ---- Raw tulip palette (the "paint tubes") ---- */
+  --tulip-pink: #f4a6c0;        /* soft tulip pink */
+  --tulip-pink-light: #fbd3e1;
+  --tulip-magenta: #c2306b;     /* deep tulip magenta */
+  --tulip-magenta-dark: #8f1f4f;
+  --blush: #fff5f8;             /* blush white */
+  --cream: #fff8ec;
+  --leaf: #6bb57c;              /* leaf / stem green */
+  --leaf-deep: #3f8a5a;
+  --lavender: #c9b8f0;          /* soft lavender accent */
+  --lavender-deep: #8f77d6;
+  --sun: #ffe08a;
+
+  /* ---- Semantic colors (what the UI actually uses) — LIGHT theme ---- */
+  --text: #3a2433;              /* main text: warm plum, softer than black */
+  --text-muted: #7d6575;
+  --text-on-accent: #ffffff;
+  --text-on-wallpaper: #ffffff; /* big lock-screen clock etc. */
+
+  --surface: rgba(255, 245, 248, 0.72);        /* acrylic panels (taskbar, start menu) */
+  --surface-strong: rgba(255, 250, 252, 0.92); /* dialogs, windows */
+  --surface-solid: #fff7fa;
+  --surface-hover: rgba(244, 166, 192, 0.22);
+  --surface-pressed: rgba(244, 166, 192, 0.36);
+  --surface-border: rgba(255, 255, 255, 0.65);
+  --divider: rgba(143, 31, 79, 0.12);
+
+  --accent: var(--tulip-magenta);
+  --accent-hover: var(--tulip-magenta-dark);
+  --accent-soft: var(--tulip-pink);
+  --accent-contrast: #ffffff;
+
+  /* ---- Shape ---- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  /* ---- Depth ---- */
+  --shadow-sm: 0 1px 3px rgba(120, 40, 80, 0.12);
+  --shadow-md: 0 6px 20px rgba(120, 40, 80, 0.16);
+  --shadow-lg: 0 18px 48px rgba(120, 40, 80, 0.26);
+  --blur: blur(28px) saturate(1.6);  /* the mica/acrylic effect (backdrop-filter) */
+
+  /* ---- Type ---- */
+  --font: 'Nunito', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
+
+  /* ---- Layout ---- */
+  --taskbar-height: 48px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);   /* gentle "ease-out" used everywhere */
+  --dur-fast: 120ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+
+  /* ---- Boot / goodbye screens ---- */
+  --boot-bg: radial-gradient(ellipse at 50% 38%, #fff5f8 0%, #fbd3e1 55%, #f4a6c0 120%);
+  --boot-text: #8f1f4f;
+  --goodbye-bg: radial-gradient(ellipse at 50% 40%, #6b3f8f 0%, #2b2262 80%);
+  --goodbye-text: #ffe3f0;
+}
+
+/* ---- Night garden (dark) theme: only overrides what changes ---- */
+:root[data-theme='dark'] {
+  --text: #fbeaf2;
+  --text-muted: #bfa4b6;
+
+  --surface: rgba(38, 26, 52, 0.7);
+  --surface-strong: rgba(44, 30, 60, 0.94);
+  --surface-solid: #2b1d3b;
+  --surface-hover: rgba(244, 166, 192, 0.16);
+  --surface-pressed: rgba(244, 166, 192, 0.28);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --divider: rgba(255, 220, 235, 0.12);
+
+  --accent: var(--tulip-pink);
+  --accent-hover: #f8bdd2;
+  --accent-contrast: #3a1230;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  --boot-bg: radial-gradient(ellipse at 50% 38%, #4a2f66 0%, #2b1d3b 60%, #1a1226 120%);
+  --boot-text: #f8bdd2;
+}
+
+/* ---- Accent color variants (Settings -> Personalization) ----
+   data-accent on <html> picks one. "light" vs "dark" accent kept readable. */
+:root[data-accent='red']    { --accent: #d6313f; --accent-hover: #a82330; --accent-soft: #f59aa3; }
+:root[data-accent='yellow'] { --accent: #d99a00; --accent-hover: #a87600; --accent-soft: #ffe08a; }
+:root[data-accent='purple'] { --accent: #7e5bd0; --accent-hover: #5f3fb0; --accent-soft: var(--lavender); }
+:root[data-accent='white']  { --accent: #8a7384; --accent-hover: #6a5566; --accent-soft: #f3e8ee; }
+
+:root[data-theme='dark'][data-accent='red']    { --accent: #ff7b87; --accent-hover: #ff9aa3; --accent-contrast: #3a0f14; }
+:root[data-theme='dark'][data-accent='yellow'] { --accent: #ffd35c; --accent-hover: #ffe08a; --accent-contrast: #3a2a00; }
+:root[data-theme='dark'][data-accent='purple'] { --accent: #b9a2ee; --accent-hover: #cdbcf5; --accent-contrast: #231446; }
+:root[data-theme='dark'][data-accent='white']  { --accent: #f3e8ee; --accent-hover: #ffffff; --accent-contrast: #3a2433; }

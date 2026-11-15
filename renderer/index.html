@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-accent="pink" data-wallpaper="day">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Content Security Policy: the page may only load its own local files.
+         No inline scripts, no internet. (Inline styles are allowed because we set
+         a few style="" values from JavaScript.) -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>H-os</title>
+    <link rel="stylesheet" href="css/fonts.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/shell.css" />
+  </head>
+  <body>
+    <!-- Layer 0: wallpaper (image chosen by data-wallpaper on <html>) -->
+    <div id="wallpaper" class="wallpaper"></div>
+
+    <!-- Layer 1: the desktop. Milestone 1 only has a welcome card here. -->
+    <main id="desktop" class="desktop" hidden>
+      <div class="desktop-card">
+        <div id="desktop-icon"></div>
+        <h1>Welcome home!</h1>
+        <p>
+          The desktop and Start menu arrive in the next milestone.<br />
+          For now you can try the exits: press <kbd>Alt</kbd>+<kbd>F4</kbd> to shut down, or
+          <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd> to leave instantly.
+        </p>
+        <div class="dialog-actions" style="margin-top: 16px">
+          <button class="btn" id="btn-restart">Restart</button>
+          <button class="btn btn-primary" id="btn-shutdown">Shut down</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Layer 2: lock screen -->
+    <section id="lock" class="lock" hidden tabindex="0" aria-label="Lock screen">
+      <div class="lock-top">
+        <div id="lock-time" class="lock-time"></div>
+        <div id="lock-date" class="lock-date"></div>
+        <div id="lock-greeting" class="lock-greeting"></div>
+      </div>
+      <div class="lock-enter">
+        <span id="lock-enter-icon"></span>
+        <span>Click to enter H-os</span>
+      </div>
+    </section>
+
+    <!-- Layer 3: boot screen (covers everything while "starting up") -->
+    <section id="boot" class="boot" aria-label="Starting H-os">
+      <div id="boot-logo-slot"></div>
+      <h1 class="boot-title">H-os</h1>
+      <div class="boot-bar"><div id="boot-bar-fill" class="boot-bar-fill"></div></div>
+      <p id="boot-status" class="boot-status">Waking up the tulips…</p>
+      <p class="boot-hint">Press any key to skip</p>
+    </section>
+
+    <!-- The tulip logo, defined once. tulip.js copies it wherever we need a tulip
+         (boot, goodbye, buttons). Each piece has a class so CSS can animate it. -->
+    <template id="tulip-template">
+      <svg viewBox="0 0 100 130" aria-hidden="true">
+        <path class="stem" d="M50 128 V68" stroke-width="5" stroke-linecap="round" fill="none" />
+        <path class="leaf leaf-l" d="M50 124 C28 118 20 98 24 80 C38 90 48 104 50 124Z" />
+        <path class="leaf leaf-r" d="M50 124 C72 118 80 98 76 80 C62 90 52 104 50 124Z" />
+        <path class="petal petal-l" d="M50 72 C30 68 26 44 32 24 C42 32 48 50 50 72Z" />
+        <path class="petal petal-r" d="M50 72 C70 68 74 44 68 24 C58 32 52 50 50 72Z" />
+        <path class="petal petal-c" d="M50 74 C36 66 36 38 50 14 C64 38 64 66 50 74Z" />
+        <path class="shine" d="M45 56 C42 44 44 32 49 24 C46 35 46 46 45 56Z" />
+        <g transform="translate(14 18)"><path class="sparkle" style="animation-delay: 1350ms" d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2Z" /></g>
+        <g transform="translate(88 34)"><path class="sparkle" style="animation-delay: 1500ms" d="M0 -6 L1.7 -1.7 L6 0 L1.7 1.7 L0 6 L-1.7 1.7 L-6 0 L-1.7 -1.7Z" /></g>
+        <g transform="translate(78 6)"><path class="sparkle" style="animation-delay: 1700ms" d="M0 -5 L1.4 -1.4 L5 0 L1.4 1.4 L0 5 L-1.4 1.4 L-5 0 L-1.4 -1.4Z" /></g>
+      </svg>
+    </template>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
