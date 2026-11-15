@@ -16,6 +16,7 @@ const path = require('path');
 const os = require('os');
 const mainSettings = require('./mainSettings');
 const mainFs = require('./mainFs');
+const mainTerm = require('./mainTerm');
 
 // ---- Command-line flags (for development / testing) -------------------------
 //   npm start                      -> real fullscreen H-os
@@ -170,6 +171,9 @@ function registerIpc() {
   // protected, so the guard can be tested for real without ever touching actual system folders.
   mainFs.register({ extraProtectedTrees: SMOKE ? [path.join(SMOKE_SANDBOX, 'protected-zone')] : [] });
 
+  // Terminal sessions + clipboard (mainTerm.js).
+  mainTerm.register();
+
   // Settings: load everything / save a partial update (validated in mainSettings.js).
   ipcMain.handle('settings:load', () => mainSettings.load());
   ipcMain.handle('settings:save', (event, patch) => mainSettings.save(patch));
@@ -198,6 +202,7 @@ app.whenReady().then(() => {
       dir: SMOKE_DIR,
       sandbox: SMOKE_SANDBOX,
       fsapi: process.argv.includes('--smoke-fsapi'), // only test the filesystem API, then exit
+      termOnly: process.argv.includes('--smoke-term'), // only test the Terminal (HOS_NO_PTY=1 = pipe mode)
       verify: process.argv.includes('--smoke-verify'), // 2nd run: check that settings survived
       requestShutdownDialog,
       emergencyExit,
@@ -213,5 +218,8 @@ app.on('second-instance', () => {
   }
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  mainTerm.killAll(); // never leave shells running after H-os closes
+});
 app.on('window-all-closed', () => app.quit());

@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi }) {
+exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly }) {
   const wc = win.webContents;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const js = (code) => wc.executeJavaScript(code);
@@ -61,9 +61,10 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi }) {
   async function type(text) {
     for (const ch of text) {
       const code = ch === ' ' ? 'Space' : ch;
-      wc.sendInputEvent({ type: 'keyDown', keyCode: code });
-      wc.sendInputEvent({ type: 'char', keyCode: ch });
-      wc.sendInputEvent({ type: 'keyUp', keyCode: code });
+      const modifiers = /[A-Z]/.test(ch) ? ['shift'] : []; // capitals need Shift (terminals read key events, not text)
+      wc.sendInputEvent({ type: 'keyDown', keyCode: code, modifiers });
+      wc.sendInputEvent({ type: 'char', keyCode: ch, modifiers });
+      wc.sendInputEvent({ type: 'keyUp', keyCode: code, modifiers });
       await sleep(25);
     }
   }
@@ -121,6 +122,13 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi }) {
         return;
       }
       await enterShell();
+
+      if (termOnly) { // just the Terminal (run with HOS_NO_PTY=1 to test the pipe fallback)
+        await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
+        console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL TERMINAL CHECKS PASSED'}`);
+        require('electron').app.exit(failures ? 1 : 0);
+        return;
+      }
 
       // ---------------------------------------------------------------- verify run
       if (verify) {
@@ -372,6 +380,9 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi }) {
 
       // ---------------------------------------------------------------- 8c. FILE EXPLORER / NOTEPAD / IMAGE VIEWER (milestone 4)
       await require('./smokeExplorer').run({ js, check, snap, sleep, click, clickOn, center, key, type, sandbox, mouse, mouseDownUp });
+
+      // ---------------------------------------------------------------- 8d. TERMINAL (milestone 5)
+      await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
 
       // ---------------------------------------------------------------- 9. settings: dark + left + purple
       await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left')`);

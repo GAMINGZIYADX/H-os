@@ -41,6 +41,30 @@ contextBridge.exposeInMainWorld('hos', {
     openRecycleBin: () => ipcRenderer.invoke('shell:open-recycle-bin'),
   },
 
+  // Terminal sessions (a real shell; output arrives through onData / onExit).
+  term: {
+    spawn: (opts) => ipcRenderer.invoke('term:spawn', opts || {}),
+    write: (id, data) => ipcRenderer.invoke('term:write', id, data),
+    resize: (id, cols, rows) => ipcRenderer.invoke('term:resize', id, cols, rows),
+    kill: (id) => ipcRenderer.invoke('term:kill', id),
+    onData: (callback) => {
+      const listener = (event, id, data) => callback(id, data);
+      ipcRenderer.on('term:data', listener);
+      return () => ipcRenderer.removeListener('term:data', listener);
+    },
+    onExit: (callback) => {
+      const listener = (event, id, code) => callback(id, code);
+      ipcRenderer.on('term:exit', listener);
+      return () => ipcRenderer.removeListener('term:exit', listener);
+    },
+  },
+
+  // Text clipboard.
+  clipboard: {
+    readText: () => ipcRenderer.invoke('clipboard:read-text'),
+    writeText: (text) => ipcRenderer.invoke('clipboard:write-text', text),
+  },
+
   // Native open/save dialogs.
   dialog: {
     openFile: (kind) => ipcRenderer.invoke('dialog:open-file', kind),

@@ -69,6 +69,7 @@ const UI_PATHS = {
   pin: '<path d="M9 4h6l-1 6 3 3H7l3-3Z"/><path d="M12 13v7"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  terminal: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10l3 2.5L7 15M12.5 15H17"/>',
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   forward: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   up: '<path d="M12 19V5M6 11l6-6 6 6"/>',

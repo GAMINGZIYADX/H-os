@@ -25,6 +25,7 @@ import { showContextMenu } from '../contextMenu.js';
 import { showDialog } from '../ui/dialogs.js';
 import { on } from '../events.js';
 import { openFileSmart } from '../fileOpen.js';
+import { launchApp } from '../appRegistry.js';
 import {
   getClipboard, setClipboard, clipboardHasItems, setDrag, getDrag,
   pasteInto, trashPaths, notifyChanged, reportError,
@@ -652,6 +653,7 @@ function create(container, ctx) {
       { label: 'Paste', icon: 'paste', disabled: !change || !clipboardHasItems(), onSelect: () => doPaste() },
       { separator: true },
       { label: 'Refresh', icon: 'refresh', onSelect: () => refresh() },
+      { label: 'Open in Terminal', icon: 'terminal', disabled: !change, onSelect: () => launchApp('terminal', { path: st.path }) },
       { label: 'Properties', icon: 'info', onSelect: () => showProperties() },
     ]);
   });

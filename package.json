@@ -9,12 +9,22 @@
     "dev": "electron . --windowed",
     "smoke": "electron . --windowed --smoke",
     "smoke:fs": "electron . --windowed --smoke=smoke-output --smoke-fsapi",
-    "test:guard": "node tools/test-guard.js"
+    "test:guard": "node tools/test-guard.js",
+    "postinstall": "node tools/copy-vendor.js",
+    "prestart": "node tools/copy-vendor.js",
+    "predev": "node tools/copy-vendor.js",
+    "presmoke": "node tools/copy-vendor.js",
+    "smoke:term": "electron . --windowed --smoke=smoke-output --smoke-term"
   },
   "author": "H-os",
   "license": "MIT",
   "devDependencies": {
     "@fontsource/nunito": "^5.3.0",
     "electron": "^45.3.2"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.18",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0"
   }
 }

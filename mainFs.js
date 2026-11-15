@@ -10,13 +10,13 @@
 //   * NEVER deletes permanently: removal always goes to the Recycle Bin (shell.trashItem).
 // =============================================================================
 
-const { app, shell, dialog, ipcMain } = require('electron');
+const { app, shell, dialog } = require('electron');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const { spawn } = require('child_process');
-const { pathToFileURL } = require('url');
 const { createGuard, GuardError } = require('./mainFsGuard');
+const { makeHandle } = require('./mainIpc');
 
 // ---- Limits (keep the app responsive and memory-safe) ----
 const MAX_ENTRIES = 5000;            // entries returned for one folder
@@ -75,8 +75,6 @@ function toError(err) {
 // Setup
 // ---------------------------------------------------------------------------
 function register({ extraProtectedTrees = [] } = {}) {
-  const rendererUrl = pathToFileURL(path.join(__dirname, 'renderer', 'index.html')).href;
-
   const guard = createGuard({
     extraProtectedTrees: [
       app.getPath('userData'), // H-os's own settings
@@ -88,23 +86,8 @@ function register({ extraProtectedTrees = [] } = {}) {
   const P = guard.path;
   const win32 = process.platform === 'win32';
 
-  // Only our own page may call these.
-  function trusted(event) {
-    const url = event.senderFrame && event.senderFrame.url;
-    return typeof url === 'string' && url.split('#')[0].split('?')[0] === rendererUrl;
-  }
-
-  // Register a channel whose handler returns data (or throws); wrap it into {ok,...}.
-  function handle(channel, fn) {
-    ipcMain.handle(channel, async (event, ...args) => {
-      if (!trusted(event)) return { ok: false, error: { code: 'UNTRUSTED', message: 'Request refused.' } };
-      try {
-        return { ok: true, data: await fn(...args) };
-      } catch (err) {
-        return { ok: false, error: toError(err) };
-      }
-    });
-  }
+  // handle(channel, fn): only our own page may call it; answers { ok, data } or { ok:false, error }.
+  const handle = makeHandle(toError);
 
   // ---- argument checking helpers ----
   const bad = (msg = 'Invalid request.') => new FsError('INVALID', msg);

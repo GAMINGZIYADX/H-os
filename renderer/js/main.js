@@ -17,6 +17,7 @@ import { registerExplorer } from './apps/explorer.js';
 import { registerNotepad } from './apps/notepad.js';
 import { registerImageViewer } from './apps/imageviewer.js';
 import { registerRecycleBin } from './apps/recycle.js';
+import { registerTerminal } from './apps/terminal.js';
 import { openFileSmart } from './fileOpen.js';
 import { launchApp } from './appRegistry.js';
 import { initStartMenu, closeStartMenu } from './startmenu.js';
@@ -59,6 +60,7 @@ async function init() {
   registerNotepad();
   registerImageViewer();
   registerRecycleBin();
+  registerTerminal();
   registerWindowTest();           // temporary demo app for the window manager (removed later)
   initWindowManager();            // from now on launchApp() opens real windows
   initPower();
