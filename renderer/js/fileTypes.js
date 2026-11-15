@@ -15,6 +15,7 @@ const TYPES = {
   yml: T('file-code', 'YAML File', 'text'), yaml: T('file-code', 'YAML File', 'text'), c: T('file-code', 'C Source', 'text'),
   h: T('file-code', 'C Header', 'text'), cpp: T('file-code', 'C++ Source', 'text'), java: T('file-code', 'Java File', 'text'),
   rs: T('file-code', 'Rust File', 'text'), go: T('file-code', 'Go File', 'text'), sh: T('file-code', 'Shell Script', 'text'),
+  pgn: T('file-text', 'Chess Game (PGN)', 'text'),
   bat: T('file-code', 'Batch File', 'text'), ps1: T('file-code', 'PowerShell Script', 'text'),
   // pictures (opened by Image Viewer)
   png: T('file-image', 'PNG Image', 'image'), jpg: T('file-image', 'JPEG Image', 'image'), jpeg: T('file-image', 'JPEG Image', 'image'),

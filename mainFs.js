@@ -445,7 +445,7 @@ function register({ extraProtectedTrees = [] } = {}) {
   // Native open / save dialogs (used by Notepad and Image Viewer)
   // ------------------------------------------------------------------------
   const FILTERS = {
-    text: [{ name: 'Text files', extensions: ['txt', 'md', 'json', 'js', 'py', 'html', 'css', 'csv', 'log', 'xml', 'yml', 'yaml', 'ini'] }, { name: 'All files', extensions: ['*'] }],
+    text: [{ name: 'Text files', extensions: ['txt', 'md', 'json', 'js', 'py', 'html', 'css', 'csv', 'log', 'xml', 'yml', 'yaml', 'ini', 'pgn'] }, { name: 'All files', extensions: ['*'] }],
     image: [{ name: 'Pictures', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'avif'] }],
   };
   const parentWindow = () => require('electron').BrowserWindow.getAllWindows()[0];

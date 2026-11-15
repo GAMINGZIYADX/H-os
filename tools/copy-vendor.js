@@ -14,6 +14,12 @@ const FILES = [
   ['@xterm/xterm', 'css/xterm.css', 'xterm', 'xterm.css'],
   ['@xterm/xterm', 'LICENSE', 'xterm', 'LICENSE'],
   ['@xterm/addon-fit', 'lib/addon-fit.mjs', 'xterm', 'addon-fit.mjs'],
+  ['chess.js', 'dist/esm/chess.js', 'chess', 'chess.js'],
+  ['chess.js', 'LICENSE', 'chess', 'LICENSE'],
+  // Stockfish (GPL-3.0): the "lite, single-threaded" engine = small, and needs no special browser setup.
+  ['stockfish', 'bin/stockfish-19-lite-single.js', 'stockfish', 'stockfish.js'],
+  ['stockfish', 'bin/stockfish-19-lite-single.wasm', 'stockfish', 'stockfish.wasm'],
+  ['stockfish', 'Copying.txt', 'stockfish', 'Copying.txt'],
 ];
 
 let copied = 0;

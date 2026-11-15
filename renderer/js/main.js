@@ -18,6 +18,9 @@ import { registerNotepad } from './apps/notepad.js';
 import { registerImageViewer } from './apps/imageviewer.js';
 import { registerRecycleBin } from './apps/recycle.js';
 import { registerTerminal } from './apps/terminal.js';
+import { registerSudoku } from './apps/sudoku.js';
+import { registerChess } from './apps/chess.js';
+import { registerPuzzlesHub } from './apps/puzzles.js';
 import { openFileSmart } from './fileOpen.js';
 import { launchApp } from './appRegistry.js';
 import { initStartMenu, closeStartMenu } from './startmenu.js';
@@ -61,6 +64,9 @@ async function init() {
   registerImageViewer();
   registerRecycleBin();
   registerTerminal();
+  registerSudoku();
+  registerChess();
+  registerPuzzlesHub();           // after the games, so it can list them
   registerWindowTest();           // temporary demo app for the window manager (removed later)
   initWindowManager();            // from now on launchApp() opens real windows
   initPower();

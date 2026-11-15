@@ -25,6 +25,8 @@ const DEFAULTS = {
   desktopIcons: {},                                                    // { appId: { col, row } }
   recent: [],                                                          // [{ name, path, time }]
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false }, // File Explorer preferences
+  sudoku: null,                                                        // game in progress (see sanitize)
+  sudokuBest: { easy: null, medium: null, hard: null },                 // best times in seconds
 };
 
 // Settings that may only be one of a few allowed words.
@@ -79,6 +81,29 @@ function sanitize(input) {
     for (const [k, allowed] of Object.entries(EXPLORER_ENUMS)) if (allowed.includes(e[k])) ex[k] = e[k];
     if (typeof e.showHidden === 'boolean') ex.showHidden = e.showHidden;
     out.explorer = { ...DEFAULTS.explorer, ...ex };
+  }
+
+  // Sudoku: the game in progress (all strings of digits + bit masks, validated strictly).
+  if (input.sudoku === null) out.sudoku = null;
+  else if (input.sudoku && typeof input.sudoku === 'object' && !Array.isArray(input.sudoku)) {
+    const s = input.sudoku;
+    const okStr = (v, re) => typeof v === 'string' && re.test(v);
+    const okInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+    if (
+      ['easy', 'medium', 'hard'].includes(s.difficulty) && okStr(s.puzzle, /^[0-9]{81}$/) && okStr(s.solution, /^[1-9]{81}$/) &&
+      okStr(s.values, /^[0-9]{81}$/) && Array.isArray(s.notes) && s.notes.length === 81 && s.notes.every((n) => okInt(n, 0, 511)) &&
+      okInt(s.elapsed, 0, 10000000) && okInt(s.hints, 0, 81) && typeof s.solved === 'boolean'
+    ) {
+      out.sudoku = { difficulty: s.difficulty, puzzle: s.puzzle, solution: s.solution, values: s.values, notes: [...s.notes], elapsed: s.elapsed, hints: s.hints, solved: s.solved };
+    }
+  }
+  if (input.sudokuBest && typeof input.sudokuBest === 'object' && !Array.isArray(input.sudokuBest)) {
+    const best = {};
+    for (const level of ['easy', 'medium', 'hard']) {
+      const v = input.sudokuBest[level];
+      best[level] = Number.isInteger(v) && v > 0 && v <= 10000000 ? v : null;
+    }
+    out.sudokuBest = best;
   }
 
   return out;

@@ -1,0 +1,11 @@
+/* Puzzles hub */
+.pz { height: 100%; padding: 22px 24px; overflow-y: auto; }
+.pz-title { margin: 0; font-size: 24px; font-weight: 800; }
+.pz-sub { margin: 4px 0 18px; color: var(--text-muted); }
+.pz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pz-card { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--divider); border-radius: var(--radius-lg); background: var(--surface-solid); color: var(--text); font: inherit; text-align: left; transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast), background var(--dur-fast); }
+.pz-card:hover { background: var(--surface-hover); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+.pz-card:active { transform: scale(0.98); }
+.pz-icon svg { display: block; width: 52px; height: 52px; }
+.pz-name { font-size: 16px; font-weight: 800; }
+.pz-desc { margin-top: 2px; font-size: 12.5px; color: var(--text-muted); line-height: 1.35; }

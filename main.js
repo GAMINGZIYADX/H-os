@@ -202,6 +202,7 @@ app.whenReady().then(() => {
       dir: SMOKE_DIR,
       sandbox: SMOKE_SANDBOX,
       fsapi: process.argv.includes('--smoke-fsapi'), // only test the filesystem API, then exit
+      gamesOnly: process.argv.includes('--smoke-games'), // only the puzzle games
       termOnly: process.argv.includes('--smoke-term'), // only test the Terminal (HOS_NO_PTY=1 = pipe mode)
       verify: process.argv.includes('--smoke-verify'), // 2nd run: check that settings survived
       requestShutdownDialog,

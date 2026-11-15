@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly }) {
+exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, termOnly, gamesOnly }) {
   const wc = win.webContents;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const js = (code) => wc.executeJavaScript(code);
@@ -126,6 +126,13 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
       if (termOnly) { // just the Terminal (run with HOS_NO_PTY=1 to test the pipe fallback)
         await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
         console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL TERMINAL CHECKS PASSED'}`);
+        require('electron').app.exit(failures ? 1 : 0);
+        return;
+      }
+
+      if (gamesOnly) { // just the puzzle games
+        await require('./smokeGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
+        console.log(`[smoke] ${failures ? 'FAILURES: ' + failures : 'ALL GAME CHECKS PASSED'}`);
         require('electron').app.exit(failures ? 1 : 0);
         return;
       }
@@ -383,6 +390,9 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
 
       // ---------------------------------------------------------------- 8d. TERMINAL (milestone 5)
       await require('./smokeTerminal').run({ js, check, snap, sleep, click, clickOn, center, key, type, mouse, drag });
+
+      // ---------------------------------------------------------------- 8e. PUZZLES: Sudoku + Chess (milestone 6)
+      await require('./smokeGames').run({ js, check, snap, sleep, click, clickOn, key, mouse });
 
       // ---------------------------------------------------------------- 9. settings: dark + left + purple
       await js(`window.__hos.settings.setSetting('theme', 'dark'); window.__hos.settings.setSetting('accent', 'purple'); window.__hos.settings.setSetting('taskbarAlign', 'left')`);

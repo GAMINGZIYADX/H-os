@@ -7,7 +7,7 @@
          a few style="" values from JavaScript.) -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>H-os</title>
@@ -21,6 +21,9 @@
     <link rel="stylesheet" href="css/menus.css" />
     <link rel="stylesheet" href="css/apps/windowTest.css" />
     <link rel="stylesheet" href="css/apps/terminal.css" />
+    <link rel="stylesheet" href="css/apps/sudoku.css" />
+    <link rel="stylesheet" href="css/apps/chess.css" />
+    <link rel="stylesheet" href="css/apps/puzzles.css" />
     <link rel="stylesheet" href="css/apps/explorer.css" />
     <link rel="stylesheet" href="css/apps/notepad.css" />
     <link rel="stylesheet" href="css/apps/imageviewer.css" />

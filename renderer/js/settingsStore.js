@@ -21,6 +21,8 @@ export const DEFAULTS = {
   desktopIcons: {},
   recent: [],
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false },
+  sudoku: null,
+  sudokuBest: { easy: null, medium: null, hard: null },
 };
 
 const APPEARANCE_KEYS = ['theme', 'accent', 'wallpaper', 'taskbarAlign'];
