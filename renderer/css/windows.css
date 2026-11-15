@@ -52,7 +52,7 @@
   background: color-mix(in srgb, var(--surface-solid) 78%, var(--tulip-pink-light));
   touch-action: none;
 }
-:root[data-theme='dark'] .win-titlebar { background: color-mix(in srgb, var(--surface-solid) 85%, #000); }
+:root[data-theme='dark'] .win-titlebar { background: color-mix(in srgb, var(--surface-solid) 85%, var(--black)); }
 .win-icon svg { display: block; width: 18px; height: 18px; }
 .win-icon .tulip-icon { width: 14px; height: auto; }
 .win-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.6; }
@@ -74,7 +74,7 @@
 .win-ctrl .icon svg { display: block; width: 14px; height: 14px; }
 .win-ctrl.is-close { border-top-right-radius: calc(var(--radius-lg) - 1px); }
 .win.is-maximized .win-ctrl.is-close, .win.is-snapped .win-ctrl.is-close { border-radius: 0; }
-.win-ctrl.is-close:hover { background: #d6313f; color: #fff; }
+.win-ctrl.is-close:hover { background: var(--danger); color: var(--danger-contrast); }
 
 /* ---- Body: the app's container ---- */
 .win-body {

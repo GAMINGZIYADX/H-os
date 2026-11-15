@@ -19,7 +19,7 @@ import { hasPin, setPin, clearPin, verifyPin, validPinFormat } from '../pin.js';
 import { toast } from '../notifications.js';
 
 const WALLPAPERS = [['day', 'Tulip field'], ['dusk', 'Tulip dusk'], ['pastel', 'Pastel gradient']];
-const ACCENTS = [['pink', 'Pink', '#c2306b'], ['red', 'Red', '#d6313f'], ['yellow', 'Yellow', '#d99a00'], ['purple', 'Purple', '#7e5bd0'], ['white', 'White', '#8a7384']];
+const ACCENTS = [['pink', 'Pink'], ['red', 'Red'], ['yellow', 'Yellow'], ['purple', 'Purple'], ['white', 'White']]; // colours: --accent-* in theme.css
 
 const CREDITS = [
   ['Electron', 'MIT'],
@@ -74,12 +74,12 @@ function create(container, ctx) {
 
   function swatches() {
     const wrap = el('div', 'st-swatches');
-    const buttons = ACCENTS.map(([value, label, color]) => {
+    const buttons = ACCENTS.map(([value, label]) => {
       const b = el('button', 'st-swatch');
       b.dataset.value = value;
       b.title = label;
       b.setAttribute('aria-label', label);
-      b.style.setProperty('--swatch', color);
+      b.style.setProperty('--swatch', `var(--accent-${value})`);
       b.append(iconEl('check'));
       b.addEventListener('click', () => setSetting('accent', value));
       wrap.append(b);

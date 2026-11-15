@@ -16,7 +16,8 @@ import { emit } from '../events.js';
 import * as E from '../puzzles/sudokuEngine.js';
 
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
-const PETAL_COLORS = ['#f4a6c0', '#ee82a8', '#e0558b', '#fbd3e1', '#c9b8f0', '#ffe08a', '#c2306b'];
+// The falling petals use the palette from theme.css.
+const PETAL_COLORS = ['var(--tulip-pink)', 'var(--tulip-rose)', 'var(--tulip-magenta)', 'var(--tulip-pink-light)', 'var(--lavender)', 'var(--sun)'];
 
 const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 

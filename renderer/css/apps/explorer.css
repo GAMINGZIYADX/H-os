@@ -55,7 +55,7 @@
 /* ---- main area ---- */
 .ex-main { flex: 1; min-height: 0; display: flex; }
 .ex-sidebar { flex: none; width: 190px; padding: 8px 6px; overflow-y: auto; border-right: 1px solid var(--divider); background: color-mix(in srgb, var(--surface-solid) 70%, var(--tulip-pink-light)); }
-:root[data-theme='dark'] .ex-sidebar { background: color-mix(in srgb, var(--surface-solid) 88%, #000); }
+:root[data-theme='dark'] .ex-sidebar { background: color-mix(in srgb, var(--surface-solid) 88%, var(--black)); }
 .ex-place {
   width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: var(--radius-md);
   background: transparent; color: var(--text); font: inherit; font-size: 13px; font-weight: 600; text-align: left; overflow: hidden;
@@ -126,7 +126,7 @@
 .ex-tile-sub { margin-top: 3px; font-size: 12px; color: var(--text-muted); }
 .ex-meter { height: 8px; margin-top: 6px; border-radius: 4px; background: var(--divider); overflow: hidden; }
 .ex-meter-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--tulip-pink), var(--accent)); }
-.ex-meter-fill.is-full { background: #d6313f; }
+.ex-meter-fill.is-full { background: var(--danger); }
 
 /* ---- status bar (shared) ---- */
 .ex-status, .np-status, .iv-status {
@@ -134,7 +134,7 @@
   border-top: 1px solid var(--divider); font-size: 12px; color: var(--text-muted);
   background: color-mix(in srgb, var(--surface-solid) 70%, var(--tulip-pink-light));
 }
-:root[data-theme='dark'] .ex-status, :root[data-theme='dark'] .np-status, :root[data-theme='dark'] .iv-status { background: color-mix(in srgb, var(--surface-solid) 88%, #000); }
+:root[data-theme='dark'] .ex-status, :root[data-theme='dark'] .np-status, :root[data-theme='dark'] .iv-status { background: color-mix(in srgb, var(--surface-solid) 88%, var(--black)); }
 
 /* ---- properties dialog ---- */
 .ex-props { margin: 4px 0 18px; text-align: left; }

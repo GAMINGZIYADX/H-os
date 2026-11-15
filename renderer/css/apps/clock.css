@@ -7,7 +7,7 @@
 .ck-body { flex: 1; min-height: 0; overflow-y: auto; }
 .ck-page { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 22px 24px; }
 
-.ck-face { width: min(300px, 100%); height: auto; filter: drop-shadow(0 6px 14px rgba(120, 40, 80, 0.2)); }
+.ck-face { width: min(300px, 100%); height: auto; filter: drop-shadow(0 6px 14px rgb(var(--ink) / 0.2)); }
 .ck-rim { fill: var(--surface-solid); stroke: var(--accent-soft); stroke-width: 6; }
 .ck-tick { stroke: var(--text-muted); stroke-width: 1.5; }
 .ck-tick.big { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }

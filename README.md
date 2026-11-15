@@ -24,7 +24,7 @@ Chess game you can play against Stockfish.
 
 ## Run it
 
-You need [Node.js](https://nodejs.org/) 20 or newer.
+You need [Node.js](https://nodejs.org/) 22 or newer.
 
 ```bash
 npm install        # also copies the browser libraries into renderer/vendor

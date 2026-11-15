@@ -42,7 +42,6 @@
   "dependencies": {
     "@lydell/node-pty": "^1.2.0-beta.18"
   },
-  "homepage": "https://github.com/",
   "build": {
     "appId": "com.hos.tulip",
     "productName": "H-os",

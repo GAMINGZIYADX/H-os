@@ -28,12 +28,12 @@
 .sd-cell.is-given { color: var(--text); }
 .sd-cell.is-given .sd-value { font-weight: 800; }
 .sd-cell:not(.is-given) .sd-value { font-weight: 700; }
-.sd-cell.is-hint { color: #3f8a5a; }
+.sd-cell.is-hint { color: var(--success); }
 .sd-cell.is-peer { background: color-mix(in srgb, var(--accent-soft) 16%, transparent); }
 .sd-cell.is-same { background: color-mix(in srgb, var(--accent-soft) 42%, transparent); }
 .sd-cell.is-selected { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); box-shadow: inset 0 0 0 2px var(--accent); z-index: 1; }
-.sd-cell.is-error { background: rgba(214, 49, 63, 0.18); color: #d6313f; }
-.sd-cell.is-error.is-selected { box-shadow: inset 0 0 0 2px #d6313f; }
+.sd-cell.is-error { background: var(--danger-soft); color: var(--danger); }
+.sd-cell.is-error.is-selected { box-shadow: inset 0 0 0 2px var(--danger); }
 
 .sd-notes { position: absolute; inset: 6%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); pointer-events: none; }
 .sd-notes i { display: grid; place-items: center; font-style: normal; font-size: 2.2cqw; font-weight: 700; color: var(--text-muted); opacity: 0; }

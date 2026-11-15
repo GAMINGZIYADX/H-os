@@ -66,6 +66,57 @@
   --dur: 220ms;
   --dur-slow: 420ms;
 
+  /* ---- Extra colours used by the apps (everything visual is retunable HERE) ---- */
+  --white: #ffffff;
+  --black: #000000;
+  --leaf-light: #82c792;
+  --tulip-rose: #e0709e;
+  --ink: 60 10 40;                 /* dark plum as "r g b": soft shadows are rgb(var(--ink) / 0.3) */
+  --plum: 120 30 80;               /* the tint over the lock screen, as "r g b" */
+  --label-ink: 40 5 30;            /* behind desktop icon names, as "r g b" */
+  --danger: #d6313f;               /* delete, errors, mistakes */
+  --danger-hover: #b6242f;
+  --danger-contrast: #ffffff;
+  --danger-soft: rgb(214 49 63 / 0.18);
+  --check-glow: #ff5f6e;           /* the king in check */
+  --success: #3f8a5a;              /* hints, good news */
+  --scrim: rgb(58 20 48 / 0.28);   /* the dim behind dialogs */
+  --on-wallpaper-hover: rgb(255 255 255 / 0.16);
+  --on-wallpaper-selected: rgb(255 255 255 / 0.28);
+  --on-wallpaper-border: rgb(255 255 255 / 0.55);
+  --sleep-bg: #0d0816;
+  --sleep-text: rgb(255 227 240 / 0.55);
+
+  /* accent swatches shown in Settings (the live accent is --accent) */
+  --accent-pink: #c2306b;
+  --accent-red: #d6313f;
+  --accent-yellow: #d99a00;
+  --accent-purple: #7e5bd0;
+  --accent-white: #8a7384;
+
+  /* Settings -> theme preview cards */
+  --preview-light-a: #fff5f8; --preview-light-b: #fbd3e1; --preview-light-edge: #f4a6c0;
+  --preview-dark-a: #3a2650; --preview-dark-b: #1a1226; --preview-dark-edge: #6b3f8f;
+
+  /* Chess board and pieces */
+  --chess-light: #fff3e6;
+  --chess-dark: #f2a9c2;
+  --chess-last: rgb(201 184 240 / 0.65);
+  --chess-select: rgb(255 224 138 / 0.8);
+  --chess-dot: rgb(194 48 107 / 0.55);
+  --chess-ring: rgb(194 48 107 / 0.6);
+  --piece-w-fill: #fffaf6;  --piece-w-line: #c2306b;  --piece-w-detail: #f0a0bb;
+  --piece-b-fill: #5a3a72;  --piece-b-line: #2a1638;  --piece-b-detail: #f4a6c0;
+  --eval-white: #fffaf6;
+  --eval-black: #3a2250;
+
+  /* Terminal colours (read by the Terminal app; xterm needs real colour values) */
+  --term-bg: #fff8fb; --term-fg: #3a2433; --term-cursor: #c2306b; --term-selection: rgba(244, 166, 192, 0.55);
+  --term-black: #3a2433;  --term-red: #d6313f;  --term-green: #3f8a5a;  --term-yellow: #a8750a;
+  --term-blue: #5b6fd6;   --term-magenta: #c2306b; --term-cyan: #1f8a99; --term-white: #a58ca0;
+  --term-bright-black: #7d6575; --term-bright-red: #ef5560; --term-bright-green: #52a374; --term-bright-yellow: #c99112;
+  --term-bright-blue: #7a8ce8;  --term-bright-magenta: #e0558b; --term-bright-cyan: #34a5b4; --term-bright-white: #c9b3c4;
+
   /* ---- Boot / goodbye screens ---- */
   --boot-bg: radial-gradient(ellipse at 50% 38%, #fff5f8 0%, #fbd3e1 55%, #f4a6c0 120%);
   --boot-text: #8f1f4f;
@@ -95,15 +146,29 @@
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
 
   --boot-bg: radial-gradient(ellipse at 50% 38%, #4a2f66 0%, #2b1d3b 60%, #1a1226 120%);
+  --scrim: rgb(10 4 20 / 0.5);
+  --chess-light: #e9d3df;
+  --chess-dark: #b25f84;
+  --eval-white: #fffaf6;
+  --danger: #ff7b87;
+  --danger-hover: #ff9aa3;
+  --danger-contrast: #3a0f14;
+  --danger-soft: rgb(255 123 135 / 0.2);
+  --success: #8fd6a3;
+  --term-bg: #1f1530; --term-fg: #fbeaf2; --term-cursor: #f4a6c0; --term-selection: rgba(244, 166, 192, 0.35);
+  --term-black: #2b1d3b;  --term-red: #ff7b87;  --term-green: #8fd6a3;  --term-yellow: #ffe08a;
+  --term-blue: #9fb4ff;   --term-magenta: #f4a6c0; --term-cyan: #8fe0e6; --term-white: #e8d6e1;
+  --term-bright-black: #7d6a91; --term-bright-red: #ff9aa3; --term-bright-green: #aee8bd; --term-bright-yellow: #fff0b3;
+  --term-bright-blue: #bccaff;  --term-bright-magenta: #f9c3d6; --term-bright-cyan: #b0eef2; --term-bright-white: #ffffff;
   --boot-text: #f8bdd2;
 }
 
 /* ---- Accent color variants (Settings -> Personalization) ----
    data-accent on <html> picks one. "light" vs "dark" accent kept readable. */
-:root[data-accent='red']    { --accent: #d6313f; --accent-hover: #a82330; --accent-soft: #f59aa3; }
-:root[data-accent='yellow'] { --accent: #d99a00; --accent-hover: #a87600; --accent-soft: #ffe08a; }
-:root[data-accent='purple'] { --accent: #7e5bd0; --accent-hover: #5f3fb0; --accent-soft: var(--lavender); }
-:root[data-accent='white']  { --accent: #8a7384; --accent-hover: #6a5566; --accent-soft: #f3e8ee; }
+:root[data-accent='red']    { --accent: var(--accent-red); --accent-hover: #a82330; --accent-soft: #f59aa3; }
+:root[data-accent='yellow'] { --accent: var(--accent-yellow); --accent-hover: #a87600; --accent-soft: #ffe08a; }
+:root[data-accent='purple'] { --accent: var(--accent-purple); --accent-hover: #5f3fb0; --accent-soft: var(--lavender); }
+:root[data-accent='white']  { --accent: var(--accent-white); --accent-hover: #6a5566; --accent-soft: #f3e8ee; }
 
 :root[data-theme='dark'][data-accent='red']    { --accent: #ff7b87; --accent-hover: #ff9aa3; --accent-contrast: #3a0f14; }
 :root[data-theme='dark'][data-accent='yellow'] { --accent: #ffd35c; --accent-hover: #ffe08a; --accent-contrast: #3a2a00; }

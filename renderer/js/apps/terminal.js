@@ -13,26 +13,25 @@
 
 import { el } from '../dom.js';
 import { registerApp } from '../appRegistry.js';
-import { getSetting, onSettingChange } from '../settingsStore.js';
+import { onSettingChange } from '../settingsStore.js';
 import { showContextMenu } from '../contextMenu.js';
 import { toast } from '../notifications.js';
 
-// Colour themes that match the tulip palette (xterm needs real colour values, not CSS variables).
-const THEMES = {
-  light: {
-    background: '#fff8fb', foreground: '#3a2433', cursor: '#c2306b', cursorAccent: '#fff8fb',
-    selectionBackground: 'rgba(244, 166, 192, 0.55)',
-    black: '#3a2433', red: '#d6313f', green: '#3f8a5a', yellow: '#a8750a', blue: '#5b6fd6', magenta: '#c2306b', cyan: '#1f8a99', white: '#a58ca0',
-    brightBlack: '#7d6575', brightRed: '#ef5560', brightGreen: '#52a374', brightYellow: '#c99112', brightBlue: '#7a8ce8', brightMagenta: '#e0558b', brightCyan: '#34a5b4', brightWhite: '#c9b3c4',
-  },
-  dark: {
-    background: '#1f1530', foreground: '#fbeaf2', cursor: '#f4a6c0', cursorAccent: '#1f1530',
-    selectionBackground: 'rgba(244, 166, 192, 0.35)',
-    black: '#2b1d3b', red: '#ff7b87', green: '#8fd6a3', yellow: '#ffe08a', blue: '#9fb4ff', magenta: '#f4a6c0', cyan: '#8fe0e6', white: '#e8d6e1',
-    brightBlack: '#7d6a91', brightRed: '#ff9aa3', brightGreen: '#aee8bd', brightYellow: '#fff0b3', brightBlue: '#bccaff', brightMagenta: '#f9c3d6', brightCyan: '#b0eef2', brightWhite: '#ffffff',
-  },
-};
-const currentTheme = () => THEMES[getSetting('theme') === 'dark' ? 'dark' : 'light'];
+// xterm needs real colour values, so we read the --term-* variables from theme.css (light and
+// dark versions live there). Called when the window opens and again when the theme changes.
+function currentTheme() {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name) => css.getPropertyValue(name).trim();
+  return {
+    background: v('--term-bg'), foreground: v('--term-fg'), cursor: v('--term-cursor'), cursorAccent: v('--term-bg'),
+    selectionBackground: v('--term-selection'),
+    black: v('--term-black'), red: v('--term-red'), green: v('--term-green'), yellow: v('--term-yellow'),
+    blue: v('--term-blue'), magenta: v('--term-magenta'), cyan: v('--term-cyan'), white: v('--term-white'),
+    brightBlack: v('--term-bright-black'), brightRed: v('--term-bright-red'), brightGreen: v('--term-bright-green'),
+    brightYellow: v('--term-bright-yellow'), brightBlue: v('--term-bright-blue'), brightMagenta: v('--term-bright-magenta'),
+    brightCyan: v('--term-bright-cyan'), brightWhite: v('--term-bright-white'),
+  };
+}
 
 async function create(container, ctx) {
   ctx.setTitle('Terminal');

@@ -25,14 +25,14 @@
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--text-on-wallpaper);
-  text-shadow: 0 1px 3px rgba(40, 5, 30, 0.95), 0 0 10px rgba(40, 5, 30, 0.6); /* readable on pale tulips too */
+  text-shadow: 0 1px 3px rgb(var(--label-ink) / 0.95), 0 0 10px rgb(var(--label-ink) / 0.6); /* readable on pale tulips too */
   touch-action: none;
   transition: transform 180ms var(--ease), background var(--dur-fast), border-color var(--dur-fast);
 }
-.desk-icon:hover { background: rgba(255, 255, 255, 0.16); }
-.desk-icon.is-selected { background: rgba(255, 255, 255, 0.28); border-color: rgba(255, 255, 255, 0.55); }
+.desk-icon:hover { background: var(--on-wallpaper-hover); }
+.desk-icon.is-selected { background: var(--on-wallpaper-selected); border-color: var(--on-wallpaper-border); }
 .desk-icon.is-dragging { transition: none; z-index: 5; opacity: 0.88; }
-.desk-icon .icon svg { display: block; width: 48px; height: 48px; filter: drop-shadow(0 3px 5px rgba(60, 10, 40, 0.3)); }
+.desk-icon .icon svg { display: block; width: 48px; height: 48px; filter: drop-shadow(0 3px 5px rgb(var(--ink) / 0.3)); }
 .desk-icon-label {
   max-width: 100%;
   font-size: 12.5px;
@@ -66,7 +66,7 @@
   width: 84px;
   cursor: pointer;
   transform-origin: 50% 100%;
-  filter: drop-shadow(0 6px 10px rgba(60, 10, 40, 0.28));
+  filter: drop-shadow(0 6px 10px rgb(var(--ink) / 0.28));
   animation: mascot-sway 5s ease-in-out infinite alternate;
 }
 .mascot svg { display: block; width: 100%; height: auto; }
