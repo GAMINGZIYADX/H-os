@@ -11,7 +11,7 @@ import { registerApp } from '../appRegistry.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { emit } from '../events.js';
 import * as M from '../puzzles/mergeEngine.js';
-import { getBest, recordBest, showWinCard } from '../puzzles/gameKit.js';
+import { getBest, recordBest, showWinCard, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const KEYS = {
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
@@ -113,7 +113,14 @@ function create(container, ctx) {
     }
   }
 
+  // Remember the game in progress (nothing is kept once it is over).
+  function save() {
+    const g = st.game;
+    writeSave('merge', g.over ? null : { tiles: g.tiles.map((t) => [t.r, t.c, t.v]), score: g.score });
+  }
+
   function paintChrome() {
+    save();
     scoreChip.textContent = `Score ${st.game.score}`;
     const best = getBest('merge', 'score');
     bestChip.textContent = best ? `Best ${best}` : 'Best -';
@@ -224,6 +231,17 @@ function create(container, ctx) {
   });
   board.addEventListener('pointercancel', () => { swipe = null; });
 
+  const saved = loadSave('merge');
+  if (saved) {
+    try {
+      const grid = Array.from({ length: M.SIZE }, () => new Array(M.SIZE).fill(0));
+      for (const [r, c, v] of saved.tiles) grid[r][c] = v;
+      const game = M.fromGrid(grid, saved.score);
+      if (!game.over) { st.game = game; st.celebrated = game.reached; status.textContent = 'Welcome back! Your game was kept.'; }
+    } catch (err) {
+      console.error('Tulip Merge: could not use the saved game:', err);
+    }
+  }
   rebuild();
   paintChrome();
 
@@ -231,7 +249,7 @@ function create(container, ctx) {
 
   const instance = {
     onFocus() { if (!destroyed) root.focus({ preventScroll: true }); },
-    destroy() { destroyed = true; for (const id of timers) clearTimeout(id); timers.clear(); },
+    destroy() { save(); destroyed = true; for (const id of timers) clearTimeout(id); timers.clear(); },
     _state: st,
     _api: {
       slide, undo, newGame: startNewGame,

@@ -14,7 +14,7 @@ import { confirmDialog } from '../ui/dialogs.js';
 import { emit, on } from '../events.js';
 import { onSettingChange } from '../settingsStore.js';
 import * as K from '../puzzles/snakeEngine.js';
-import { getBest, recordBest, cssColor } from '../puzzles/gameKit.js';
+import { getBest, recordBest, cssColor, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const SPEEDS = [['slow', 'Slow', 170], ['normal', 'Normal', 120], ['fast', 'Fast', 80]];
 const KEYS = {
@@ -164,6 +164,16 @@ function create(container, ctx) {
     veil.replaceChildren(el('span', 'sn-veil-text', st.note));
   }
 
+  // Remember the game in progress (it comes back paused). Nothing is kept before the start or after game over.
+  function save() {
+    const g = st.game;
+    if (st.mode === 'ready' || st.mode === 'over' || !g.alive) { writeSave('snake', null); return; }
+    writeSave('snake', {
+      speed: st.speed, wrap: st.wrap, dir: g.dir, score: g.score,
+      snake: g.snake.map((p) => [p.x, p.y]), food: g.food ? [g.food.x, g.food.y] : [0, 0],
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // The clock
   // ---------------------------------------------------------------------------
@@ -186,12 +196,14 @@ function create(container, ctx) {
     if (result === 'eat') {
       emit('sound:play', 'place');
       recordBest('snake', 'score', st.game.score);
+      save();
     } else if (result === 'dead' || result === 'won') {
       stopClock();
       st.mode = 'over';
       recordBest('snake', 'score', st.game.score);
       st.note = result === 'won' ? 'You filled the whole garden! Press Space for a new game.' : `Game over, ${st.game.score} points. Press Space to play again.`;
       emit('sound:play', result === 'won' ? 'win' : 'gameover');
+      save();
     }
     draw();
     paintChrome();
@@ -212,6 +224,7 @@ function create(container, ctx) {
     st.mode = 'paused';
     st.note = why || 'Paused. Press Space to continue.';
     paintChrome();
+    save();
   }
 
   function newGame(rng = Math.random) {
@@ -222,6 +235,7 @@ function create(container, ctx) {
     st.note = 'Press an arrow key or Space to start.';
     fit();
     paintChrome();
+    save();
   }
 
   // Speed / edges / New game button: restart (asking first if a game is going).
@@ -275,13 +289,39 @@ function create(container, ctx) {
   const resizer = new ResizeObserver(() => { if (!destroyed) fit(); });
   resizer.observe(stage);
 
-  newGame();
+  // Pick up where you left off: the snake comes back paused.
+  let restored = false;
+  const saved = loadSave('snake');
+  if (saved) {
+    try {
+      const g = K.newGame({ cols: COLS, rows: ROWS, wrap: saved.wrap });
+      g.snake = saved.snake.map(([x, y]) => ({ x, y }));
+      g.dir = saved.dir;
+      g.food = { x: saved.food[0], y: saved.food[1] };
+      g.score = saved.score;
+      if (!K.DIRS[g.dir] || g.snake.length < 3 || !SPEEDS.some((s) => s[0] === saved.speed)) throw new Error('bad save');
+      st.speed = saved.speed;
+      st.wrap = saved.wrap;
+      st.game = g;
+      st.mode = 'paused';
+      st.note = 'Welcome back! Press Space to continue.';
+      fit();
+      paintChrome();
+      restored = true;
+    } catch (err) {
+      console.error('Snake: could not use the saved game:', err);
+    }
+  }
+  if (!restored) newGame();
 
   root.focus({ preventScroll: true });   // so the keyboard works right after the window opens
 
   const instance = {
     onFocus() { if (!destroyed) root.focus({ preventScroll: true }); },
+    // Shut down asks every window first: a good moment to write the latest state down.
+    canClose() { save(); return true; },
     destroy() {
+      save();
       destroyed = true;
       stopClock();
       resizer.disconnect();

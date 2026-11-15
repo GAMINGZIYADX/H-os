@@ -12,7 +12,7 @@ import { registerApp } from '../appRegistry.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { emit } from '../events.js';
 import * as B from '../puzzles/bloomEngine.js';
-import { getBest, recordBest, showWinCard } from '../puzzles/gameKit.js';
+import { getBest, recordBest, showWinCard, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const SIZES = [['small', 'Small 4x4'], ['medium', 'Medium 5x5'], ['large', 'Large 6x6']];
 
@@ -91,6 +91,12 @@ function create(container, ctx) {
     }
   }
 
+  // Remember the puzzle in progress (nothing is kept once it is solved).
+  function save() {
+    const p = st.puzzle;
+    writeSave('bloom', st.ended ? null : { size: st.size, board: p.board.join(''), start: p.start.join(''), presses: st.presses, hints: st.hints });
+  }
+
   function paint() {
     const bd = st.puzzle.board;
     cells.forEach((b, i) => {
@@ -104,6 +110,7 @@ function create(container, ctx) {
     bestChip.textContent = best ? `Best ${best}` : 'Best -';
     sizeBtns.forEach(([id, b]) => b.classList.toggle('is-active', id === st.size));
     bHint.disabled = st.ended;
+    save();
   }
 
   // ---------------------------------------------------------------------------
@@ -203,12 +210,31 @@ function create(container, ctx) {
     else if (k.toLowerCase() === 'r') { e.preventDefault(); reset(); }
   });
 
-  startNewGame('medium', true);
+  let restored = false;
+  const saved = loadSave('bloom');
+  if (saved) {
+    try {
+      const n = B.SIZES[saved.size];
+      if (!n || saved.board.length !== n * n || saved.start.length !== n * n) throw new Error('bad save');
+      st.size = saved.size;
+      st.n = n;
+      st.puzzle = { n, board: Uint8Array.from(saved.board, Number), start: Uint8Array.from(saved.start, Number) };
+      st.presses = saved.presses;
+      st.hints = saved.hints;
+      status.textContent = 'Welcome back! Your puzzle was kept.';
+      buildBoard();
+      paint();
+      restored = true;
+    } catch (err) {
+      console.error('Tulip Bloom: could not use the saved puzzle:', err);
+    }
+  }
+  if (!restored) startNewGame('medium', true);
   root.focus({ preventScroll: true });   // so the keyboard works right after the window opens
 
   const instance = {
     onFocus() { if (!destroyed) root.focus({ preventScroll: true }); },
-    destroy() { destroyed = true; },
+    destroy() { save(); destroyed = true; },
     _state: st,
     _api: { press, hint, reset, newGame: startNewGame },
   };

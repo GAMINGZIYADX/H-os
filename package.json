@@ -61,6 +61,7 @@
       "mainIpc.js",
       "mainTerm.js",
       "mainTextEncoding.js",
+      "mainGameSaves.js",
       "selftest.js",
       "renderer/**/*",
       "build/icon.png",

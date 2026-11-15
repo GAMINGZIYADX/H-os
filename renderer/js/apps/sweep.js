@@ -14,7 +14,7 @@ import { registerApp } from '../appRegistry.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { emit } from '../events.js';
 import * as S from '../puzzles/sweepEngine.js';
-import { fmtTime, getBest, recordBest, showWinCard } from '../puzzles/gameKit.js';
+import { fmtTime, getBest, recordBest, showWinCard, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
 
@@ -131,7 +131,15 @@ function create(container, ctx) {
     paintChrome();
   }
 
+  // Remember the game in progress (nothing is kept before the first click, or once it is won or lost).
+  function save() {
+    const f = st.field;
+    if (!f || !f.placed || st.ended || f.won || f.lost) { writeSave('sweep', null); return; }
+    writeSave('sweep', { level: st.level, ...S.fieldToSave(f), elapsed: st.elapsed });
+  }
+
   function paintChrome() {
+    save();
     const f = st.field;
     minesChip.textContent = `Thorns ${S.minesLeft(f)}`;
     timeChip.textContent = fmtTime(st.elapsed);
@@ -286,13 +294,36 @@ function create(container, ctx) {
     }
   });
 
-  startNewGame('easy', true);
+  // Pick up where you left off (a bad or missing save just means a fresh game).
+  let restored = false;
+  const saved = loadSave('sweep');
+  if (saved) {
+    try {
+      const lv = S.LEVELS[saved.level];
+      const field = S.fieldFromSave(lv.rows, lv.cols, lv.mines, saved.mines, saved.state);
+      if (field.opened < lv.rows * lv.cols - lv.mines) {
+        st.level = saved.level;
+        st.field = field;
+        st.elapsed = saved.elapsed;
+        say('Welcome back! Your game was kept.');
+        buildBoard();
+        paintAll();
+        startTimerIfNeeded();
+        restored = true;
+      }
+    } catch (err) {
+      console.error('Tulip Sweep: could not use the saved game:', err);
+    }
+  }
+  if (!restored) startNewGame('easy', true);
 
   root.focus({ preventScroll: true });   // so the keyboard works right after the window opens
 
   const instance = {
     onFocus() { if (!destroyed) root.focus({ preventScroll: true }); },
-    destroy() { destroyed = true; stopTimer(); },
+    // Shut down asks every window first: a good moment to write the latest state down.
+    canClose() { save(); return true; },
+    destroy() { save(); destroyed = true; stopTimer(); },
     _state: st,
     _api: { open, flag, chord, newGame: startNewGame },
   };

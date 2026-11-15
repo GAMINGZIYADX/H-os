@@ -382,6 +382,70 @@ const load = (file) => import(pathToFileURL(path.join(__dirname, '..', 'renderer
     expect('bloom: pressing the first hint again and again solves the puzzle', followed);
   }
 
+  // ---------------------------------------------------------------- saved games (mainGameSaves.js)
+  {
+    const G = require('../mainGameSaves.js');
+    const S = await load('sweepEngine.js');
+    const Y = await load('memoryEngine.js');
+    const B = await load('bloomEngine.js');
+    const clean = (game, value) => G.sanitizeGameSaves({ [game]: value })[game];
+
+    // the sizes the main process knows must be the sizes of the real engines
+    expect('saves: Tulip Sweep sizes match the engine', Object.entries(S.LEVELS).every(([k, v]) => G.SWEEP[k] && G.SWEEP[k].rows === v.rows && G.SWEEP[k].cols === v.cols && G.SWEEP[k].mines === v.mines) && Object.keys(G.SWEEP).length === Object.keys(S.LEVELS).length);
+    expect('saves: Memory sizes match the engine', Object.entries(Y.LEVELS).every(([k, v]) => G.MEMORY[k] === v.cols * v.rows) && Y.SYMBOL_COUNT === 12);
+    expect('saves: Tulip Bloom sizes match the engine', Object.entries(B.SIZES).every(([k, n]) => G.BLOOM[k] === n) && Object.keys(G.BLOOM).length === Object.keys(B.SIZES).length);
+
+    // good saves survive unchanged
+    const nm = { cells: '370444444000000006', adds: 3, score: 20, matches: 1 };
+    expect('saves: Number Match save is accepted as written', JSON.stringify(clean('nummatch', nm)) === JSON.stringify(nm));
+    expect('saves: Number Match: a cleared board, bad digits or too many adds are refused', !clean('nummatch', { ...nm, cells: '000000000' }) && !clean('nummatch', { ...nm, cells: '37x' }) && !clean('nummatch', { ...nm, adds: 6 }));
+
+    const field = S.newField(9, 9, 10);
+    S.reveal(field, 40, makeRng(3));
+    S.toggleFlag(field, field.state.findIndex((s) => s === 0));
+    const sw = { level: 'easy', ...S.fieldToSave(field), elapsed: 12 };
+    expect('saves: Tulip Sweep save is accepted as written', JSON.stringify(clean('sweep', sw)) === JSON.stringify(sw));
+    const back = S.fieldFromSave(9, 9, 10, sw.mines, sw.state);
+    expect('saves: a Tulip Sweep field survives save and load exactly', back.opened === field.opened && back.flags === field.flags && back.near.join() === field.near.join() && back.state.join() === field.state.join() && back.placed);
+    expect('saves: Tulip Sweep: wrong lengths, wrong thorn count, an opened thorn or no opened cell are refused',
+      !clean('sweep', { ...sw, state: sw.state.slice(1) }) && !clean('sweep', { ...sw, mines: sw.mines.replace('1', '0') }) &&
+      !clean('sweep', { ...sw, state: sw.state.split('').map((c, i) => (sw.mines[i] === '1' && i === sw.mines.indexOf('1') ? '1' : c)).join('') }) &&
+      !clean('sweep', { ...sw, state: '0'.repeat(81) }) && !clean('sweep', { ...sw, level: 'huge' }));
+    let threw = false;
+    try { S.fieldFromSave(9, 9, 10, '0'.repeat(81), sw.state); } catch { threw = true; }
+    expect('saves: fieldFromSave refuses a field with the wrong number of thorns', threw);
+
+    const mg = { tiles: [[0, 0, 2], [0, 1, 4], [3, 3, 2048]], score: 300 };
+    expect('saves: Tulip Merge save is accepted as written', JSON.stringify(clean('merge', mg)) === JSON.stringify(mg));
+    expect('saves: Tulip Merge: odd values, two tiles in one cell, off-board tiles are refused',
+      !clean('merge', { ...mg, tiles: [[0, 0, 3]] }) && !clean('merge', { ...mg, tiles: [[0, 0, 2], [0, 0, 4]] }) && !clean('merge', { ...mg, tiles: [[4, 0, 2]] }) && !clean('merge', { ...mg, tiles: [] }));
+
+    const sn = { speed: 'normal', wrap: false, dir: 'right', snake: [[5, 5], [4, 5], [3, 5]], food: [10, 10], score: 30 };
+    expect('saves: Snake save is accepted as written', JSON.stringify(clean('snake', sn)) === JSON.stringify(sn));
+    expect('saves: Snake: a snake overlapping itself, food on the snake, cells off the board are refused',
+      !clean('snake', { ...sn, snake: [[5, 5], [4, 5], [5, 5]] }) && !clean('snake', { ...sn, food: [5, 5] }) && !clean('snake', { ...sn, snake: [[5, 5], [4, 5], [20, 5]] }) && !clean('snake', { ...sn, dir: 'sideways' }));
+
+    const deck = Y.newDeck(6, makeRng(5));
+    const mem = { level: 'easy', deck, state: deck.map((s, i) => (i === 0 || i === deck.findIndex((x, j) => j > 0 && x === deck[0]) ? '2' : '0')).join(''), moves: 3, elapsed: 20 };
+    expect('saves: Memory save is accepted as written', JSON.stringify(clean('memory', mem)) === JSON.stringify(mem));
+    expect('saves: Memory: a lone "matched" card, a deck that is not pairs or a finished game are refused',
+      !clean('memory', { ...mem, state: '2' + '0'.repeat(11) }) && !clean('memory', { ...mem, deck: deck.map(() => 1) }) && !clean('memory', { ...mem, state: '2'.repeat(12) }) && !clean('memory', { ...mem, level: 'hard' }));
+
+    const bl = { size: 'medium', board: '1'.repeat(24) + '0', start: '1'.repeat(23) + '00', presses: 4, hints: 1 };
+    expect('saves: Tulip Bloom save is accepted as written', JSON.stringify(clean('bloom', bl)) === JSON.stringify(bl));
+    expect('saves: Tulip Bloom: a solved board, wrong size or letters are refused', !clean('bloom', { ...bl, board: '1'.repeat(25) }) && !clean('bloom', { ...bl, board: '10' }) && !clean('bloom', { ...bl, start: 'x'.repeat(25) }));
+
+    const ch = { pgn: '1. e4 e5 2. Nf3', mode: 'two', human: 'w', colorChoice: 'w', level: 8, flipped: false };
+    expect('saves: Chess save is accepted as written', JSON.stringify(clean('chess', ch)) === JSON.stringify(ch));
+    expect('saves: Chess: odd characters, a huge game, bad mode or level are refused', !clean('chess', { ...ch, pgn: '1. e4 \u0000' }) && !clean('chess', { ...ch, pgn: 'x'.repeat(30001) }) && !clean('chess', { ...ch, mode: 'god' }) && !clean('chess', { ...ch, level: 21 }));
+
+    // nonsense in, nothing out; unknown games are dropped; and it goes through the real settings sanitizer
+    expect('saves: unknown games, arrays and extra keys are dropped', Object.keys(G.sanitizeGameSaves({ hack: nm, nummatch: [nm] })).length === 0 && !('evil' in clean('nummatch', { ...nm, evil: 1 })));
+    const viaSettings = require('../mainSettings.js').sanitize({ gameSaves: { nummatch: nm, snake: { nope: 1 } } });
+    expect('saves: the settings file keeps good saves and drops bad ones', viaSettings.gameSaves.nummatch && !viaSettings.gameSaves.snake);
+    expect('saves: prototype tricks do nothing', Object.keys(G.sanitizeGameSaves(JSON.parse('{"__proto__": {"nummatch": 1}, "constructor": 1}'))).length === 0);
+  }
+
   // ---------------------------------------------------------------- saved scores (settings.json)
   {
     const settings = require('../mainSettings.js');

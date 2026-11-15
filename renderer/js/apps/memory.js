@@ -12,7 +12,7 @@ import { registerApp } from '../appRegistry.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { emit } from '../events.js';
 import * as Y from '../puzzles/memoryEngine.js';
-import { fmtTime, getBest, recordBest, showWinCard } from '../puzzles/gameKit.js';
+import { fmtTime, getBest, recordBest, showWinCard, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
 const MISS_MS = 900;   // how long a wrong pair stays visible
@@ -109,6 +109,16 @@ function create(container, ctx) {
     });
   }
 
+  // Remember the game in progress. Cards that are only turned up for a moment are saved face down.
+  function save() {
+    const g = st.game;
+    if (st.ended || g.moves === 0) { writeSave('memory', null); return; }
+    writeSave('memory', {
+      level: st.level, deck: Array.from(g.deck), state: Array.from(g.state, (s) => (s === Y.MATCHED ? '2' : '0')).join(''),
+      moves: g.moves, elapsed: st.elapsed,
+    });
+  }
+
   function paint() {
     const g = st.game;
     cards.forEach((card, i) => {
@@ -122,6 +132,7 @@ function create(container, ctx) {
     const best = getBest('memory', st.level);
     bestChip.textContent = best ? `Best ${best} moves` : 'Best -';
     levelBtns.forEach(([id, b]) => b.classList.toggle('is-active', id === st.level));
+    save();
   }
 
   // ---------------------------------------------------------------------------
@@ -205,12 +216,36 @@ function create(container, ctx) {
     emit('sound:play', 'tick');
   }
 
-  startNewGame('medium', true);
+  let restored = false;
+  const saved = loadSave('memory');
+  if (saved) {
+    try {
+      const g = Y.newGame(saved.level);
+      if (saved.deck.length !== g.deck.length || saved.state.length !== g.deck.length) throw new Error('bad save');
+      g.deck = saved.deck;
+      g.state = Uint8Array.from(saved.state, Number);
+      g.moves = saved.moves;
+      g.matched = g.state.filter((s) => s === Y.MATCHED).length / 2;
+      st.level = saved.level;
+      st.game = g;
+      st.elapsed = saved.elapsed;
+      status.textContent = 'Welcome back! Your game was kept.';
+      buildBoard();
+      paint();
+      startClock();
+      restored = true;
+    } catch (err) {
+      console.error('Memory: could not use the saved game:', err);
+    }
+  }
+  if (!restored) startNewGame('medium', true);
   root.focus({ preventScroll: true });   // so the keyboard works right after the window opens
 
   const instance = {
     onFocus() { if (!destroyed) root.focus({ preventScroll: true }); },
-    destroy() { destroyed = true; stopClock(); stopMissTimer(); },
+    // Shut down asks every window first: a good moment to write the latest state down.
+    canClose() { save(); return true; },
+    destroy() { save(); destroyed = true; stopClock(); stopMissTimer(); },
     _state: st,
     _api: { flip: flipCard, newGame: startNewGame, hasClock: () => clock !== null },
   };

@@ -174,6 +174,14 @@ exports.run = function run({ win, dir, verify, settingsPath, sandbox, fsapi, ter
         check('taskbar align persisted (left)', dom.align === 'left');
         check('accent persisted (purple)', dom.accent === 'purple');
         check('explorer view preference persisted (grid)', s.explorer && s.explorer.view === 'grid', JSON.stringify(s.explorer));
+        // games: best scores and the game in progress survive a real restart of the app
+        check('game best scores persisted (Snake 70)', s.gameStats && s.gameStats.snake && s.gameStats.snake.score === 70, JSON.stringify(s.gameStats));
+        check('game in progress persisted (Tulip Merge board)', s.gameSaves && s.gameSaves.merge && s.gameSaves.merge.tiles.length === 13, JSON.stringify(s.gameSaves && s.gameSaves.merge));
+        await js(`window.__hos.launch('merge'); 0`);
+        await sleep(900);
+        check('Tulip Merge reopens with the saved board after the restart', (await js(`document.querySelectorAll('.win.is-focused .mg-tile').length`)) === 13);
+        await js(`window.__hos.windows().forEach((w) => window.__hos.events.emit('window:close', w.id)); 0`);
+        await sleep(500);
         const pos = await iconRects();
         console.log('[smoke] icon positions after restart:', JSON.stringify(pos));
         const saved = s.desktopIcons.terminal;

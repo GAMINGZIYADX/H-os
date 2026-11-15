@@ -12,7 +12,7 @@ import { registerApp } from '../appRegistry.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { emit } from '../events.js';
 import * as N from '../puzzles/numberMatchEngine.js';
-import { getBest, recordBest, showWinCard } from '../puzzles/gameKit.js';
+import { getBest, recordBest, showWinCard, loadSave, writeSave } from '../puzzles/gameKit.js';
 
 function create(container, ctx) {
   ctx.setTitle('Number Match');
@@ -62,6 +62,12 @@ function create(container, ctx) {
   // ---------------------------------------------------------------------------
   let cells = [];
 
+  // Remember the game in progress (nothing is kept once it is won or stuck).
+  function save() {
+    const g = st.game;
+    writeSave('nummatch', N.status(g) === 'playing' ? { cells: g.cells.join(''), adds: g.adds, score: g.score, matches: g.matches } : null);
+  }
+
   function render() {
     const values = st.game.cells;
     // the board grows when numbers are added and shrinks when rows are cleared: rebuild when the count changes
@@ -92,6 +98,7 @@ function create(container, ctx) {
     bAdd.disabled = st.game.adds <= 0 || N.status(st.game) !== 'playing';
     bHint.disabled = N.status(st.game) !== 'playing';
     status.textContent = st.message;
+    save();
   }
 
   function say(text) {
@@ -203,6 +210,16 @@ function create(container, ctx) {
     else if (k === 'escape') { st.selected = -1; st.hint = null; render(); }
   });
 
+  // Pick up where you left off (a bad or missing save just means a fresh game).
+  const saved = loadSave('nummatch');
+  if (saved) {
+    try {
+      const game = { cells: [...saved.cells].map(Number), adds: saved.adds, score: saved.score, matches: saved.matches };
+      if (N.status(game) === 'playing') { st.game = game; st.message = 'Welcome back! Your game was kept.'; }
+    } catch (err) {
+      console.error('Number Match: could not use the saved game:', err);
+    }
+  }
   render();
 
   root.focus({ preventScroll: true });   // so the keyboard works right after the window opens

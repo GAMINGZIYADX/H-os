@@ -131,3 +131,30 @@ export function toggleFlag(field, i) {
 }
 
 export const minesLeft = (field) => field.mines - field.flags;
+
+// ---- saving and loading a game in progress ----
+// A field is saved as two strings: where the thorns are ('1') and what is opened ('1') / flagged ('2').
+export function fieldToSave(field) {
+  return { mines: Array.from(field.hasMine).join(''), state: Array.from(field.state).join('') };
+}
+
+// Rebuild a field from a save (throws if the strings do not fit the size).
+export function fieldFromSave(rows, cols, mines, minesText, stateText) {
+  const field = newField(rows, cols, mines);
+  const size = rows * cols;
+  if (minesText.length !== size || stateText.length !== size) throw new Error('bad save');
+  for (let i = 0; i < size; i++) {
+    field.hasMine[i] = minesText[i] === '1' ? 1 : 0;
+    field.state[i] = Number(stateText[i]);
+  }
+  if (field.hasMine.reduce((a, b) => a + b, 0) !== mines) throw new Error('bad save');
+  for (let i = 0; i < size; i++) {
+    let n = 0;
+    for (const j of neighbors(field, i)) n += field.hasMine[j];
+    field.near[i] = n;
+    if (field.state[i] === OPEN) field.opened++;
+    if (field.state[i] === FLAG) field.flags++;
+  }
+  field.placed = true;
+  return field;
+}

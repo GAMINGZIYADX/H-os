@@ -18,6 +18,7 @@ import { fsApi } from '../fsClient.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { toast } from '../notifications.js';
 import { emit } from '../events.js';
+import { loadSave, writeSave } from '../puzzles/gameKit.js';
 
 const FILES = 'abcdefgh';
 const LEVEL_NAMES = ['Beginner', 'Beginner', 'Beginner', 'Casual', 'Casual', 'Casual', 'Casual', 'Club', 'Club', 'Club', 'Club', 'Strong', 'Strong', 'Strong', 'Strong', 'Expert', 'Expert', 'Master', 'Master', 'Master', 'Full strength'];
@@ -115,7 +116,7 @@ async function create(container, ctx) {
   };
   const bNew = tool('refresh', 'New game', () => newGame());
   const bUndo = tool('back', 'Take back', takeBack);
-  const bFlip = tool('sort', 'Flip', () => { S.flipped = !S.flipped; render(); });
+  const bFlip = tool('sort', 'Flip', () => { S.flipped = !S.flipped; render(); save(); });
   const bSave = tool('download', 'Save PGN', savePgn);
   const bLoad = tool('open', 'Load PGN', loadPgn);
   const bCopy = tool('copy', 'Copy PGN', copyPgn);
@@ -154,6 +155,14 @@ async function create(container, ctx) {
   }
   const viewPosition = () => (S.ply === null ? game : new Chess(fenAtPly(S.ply)));
   const isOver = () => game.isGameOver();
+
+  // Remember the game in progress as PGN text (nothing is kept before the first move or once the game is over).
+  function save() {
+    if (livePly() === 0 || isOver()) { writeSave('chess', null); return; }
+    writeSave('chess', {
+      pgn: game.pgn({ newline: '\n' }), mode: S.mode, human: S.human, colorChoice: S.colorChoice, level: S.level, flipped: S.flipped,
+    });
+  }
 
   function humanMayMove(color) {
     if (S.ply !== null || S.thinking || isOver()) return false;
@@ -369,6 +378,7 @@ async function create(container, ctx) {
     S.evalWhite = null;
     emit('sound:play', game.isCheckmate() || game.isDraw() ? 'gameover' : game.isCheck() ? 'check' : made.captured ? 'capture' : 'move');
     render();
+    save();
     afterMove();
   }
 
@@ -505,6 +515,7 @@ async function create(container, ctx) {
     S.evalWhite = null;
     closePromotion();
     render();
+    save();
     afterMove();
   }
 
@@ -521,6 +532,7 @@ async function create(container, ctx) {
     S.targets = [];
     S.evalWhite = null;
     render();
+    save();
     if (S.mode === 'ai' && game.turn() !== S.human && !isOver()) computerMove();
     else if (S.mode === 'analysis') analyse();
   }
@@ -574,6 +586,7 @@ async function create(container, ctx) {
     S.evalWhite = null;
     closePromotion();
     render();
+    save();
     if (S.mode === 'analysis') analyse();
   }
 
@@ -598,8 +611,8 @@ async function create(container, ctx) {
   // Wiring
   // ---------------------------------------------------------------------------
   modeSel.addEventListener('change', () => newGame());
-  colorSel.addEventListener('change', () => { S.colorChoice = colorSel.value; });
-  levelInput.addEventListener('input', () => { S.level = Number(levelInput.value); render(); });
+  colorSel.addEventListener('change', () => { S.colorChoice = colorSel.value; save(); });
+  levelInput.addEventListener('input', () => { S.level = Number(levelInput.value); render(); save(); });
 
   root.addEventListener('keydown', (e) => {
     if (e.target.matches('select, input')) return;
@@ -614,12 +627,28 @@ async function create(container, ctx) {
     else if (k === 'Escape') select(null);
   });
 
+  // Pick up where you left off (a bad or missing save just means a fresh game). If it is the
+  // computer's turn, afterMove() below lets it move.
+  const saved = loadSave('chess');
+  if (saved) {
+    try {
+      game.loadPgn(saved.pgn);
+      Object.assign(S, { mode: saved.mode, human: saved.human, colorChoice: saved.colorChoice, level: saved.level, flipped: saved.flipped });
+      modeSel.value = S.mode;
+      colorSel.value = S.colorChoice;
+      levelInput.value = String(S.level);
+    } catch (err) {
+      console.error('Chess: could not use the saved game:', err);
+      game.reset();
+    }
+  }
   render();
   afterMove();
 
   const instance = {
     onFocus() { if (!destroyed && document.activeElement === document.body) root.focus({ preventScroll: true }); },
     destroy() {
+      save();
       destroyed = true;
       S.token++;
       if (S.engine) S.engine.destroy();

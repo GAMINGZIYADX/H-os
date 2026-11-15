@@ -13,6 +13,7 @@
 const { app } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { sanitizeGameSaves } = require('./mainGameSaves');
 
 // Keep in sync with DEFAULTS in renderer/js/settingsStore.js.
 const DEFAULTS = {
@@ -27,6 +28,7 @@ const DEFAULTS = {
   explorer: { view: 'details', sortKey: 'name', sortDir: 'asc', showHidden: false }, // File Explorer preferences
   sudoku: null,                                                        // game in progress (see sanitize)
   sudokuBest: { easy: null, medium: null, hard: null },                 // best times in seconds
+  gameSaves: {},                                                       // games in progress: { gameId: {...} } (see mainGameSaves.js)
   gameStats: {},                                                       // best scores of the other games: { gameId: { key: number } } (see GAME_STATS)
   volume: 70,                                                          // 0-100, system sounds
   brightness: 100,                                                     // 40-100, the 'brightness' slider (a soft dimming overlay)
@@ -144,6 +146,11 @@ function sanitize(input) {
       if (Object.keys(row).length) stats[game] = row;
     }
     out.gameStats = stats;
+  }
+
+  // Games in progress (each game's save is validated by its own rules in mainGameSaves.js).
+  if (input.gameSaves && typeof input.gameSaves === 'object' && !Array.isArray(input.gameSaves)) {
+    out.gameSaves = sanitizeGameSaves(input.gameSaves);
   }
 
   return out;

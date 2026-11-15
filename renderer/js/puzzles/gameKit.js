@@ -88,3 +88,25 @@ export function showWinCard(root, { title, message, icon = 'tulip', petals = tru
   if (primary) primary.focus({ preventScroll: true });
   return layer;
 }
+
+// ---- the game in progress ----
+// Each game keeps its game in progress in the "gameSaves" setting, so closing the window (or H-os) does not
+// lose it. The main process checks every save against that game's own rules (mainGameSaves.js) and drops
+// anything that does not fit, so a game must always cope with "no save" and start fresh.
+//   loadSave('sweep')            -> the saved object or null
+//   writeSave('sweep', object)   -> remember it      writeSave('sweep', null) -> forget it
+export function loadSave(game) {
+  const saves = getSetting('gameSaves');
+  return saves && saves[game] ? saves[game] : null;
+}
+
+export function writeSave(game, value) {
+  const saves = { ...(getSetting('gameSaves') || {}) };
+  if (value === null || value === undefined) {
+    if (!(game in saves)) return;
+    delete saves[game];
+  } else {
+    saves[game] = value;
+  }
+  setSetting('gameSaves', saves);
+}

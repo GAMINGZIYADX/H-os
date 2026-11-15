@@ -31,7 +31,7 @@ exports.run = async function runMoreGames(t) {
   const withRng = (code) => js(`(async () => { const { makeRng } = await import('./js/puzzles/rng.js'); ${code} })()`);
 
   await closeAll();
-  await js(`window.__hos.settings.setSetting('theme', 'light'); window.__hos.settings.setSetting('accent', 'pink'); window.__hos.settings.setSetting('gameStats', {}); 0`);
+  await js(`window.__hos.settings.setSetting('theme', 'light'); window.__hos.settings.setSetting('accent', 'pink'); window.__hos.settings.setSetting('gameStats', {}); window.__hos.settings.setSetting('gameSaves', {}); 0`);
 
   // ===================================================================== Number Match
   check('nummatch: opens with 27 digits and 5 adds', await launch('nummatch', '.nm-cell') && (await js(`document.querySelectorAll('.win.is-focused .nm-cell').length`)) === 27);
@@ -372,6 +372,153 @@ exports.run = async function runMoreGames(t) {
   check('bloom: Large is 6x6', await (async () => { await clickOn('.win.is-focused .gk-seg-btn', 'Large'); return waitFor(`document.querySelectorAll('.win.is-focused .bl-cell').length === 36`); })());
   await closeAll();
   check('bloom: closing the window leaves nothing behind', (await js(`window.__hos.windows().length`)) === 0);
+
+  // ===================================================================== games keep their progress when closed
+  await js(`window.__hos.settings.setSetting('gameSaves', {}); 0`);
+  // The renderer's save goes through the real settings sanitizer of the main process and comes back:
+  // this proves that what every game writes is something the main process accepts.
+  const survives = (game) => js(`(async () => {
+    const s = window.__hos.settings;
+    const saves = s.getSetting('gameSaves');
+    if (!saves[${JSON.stringify(game)}]) return 'no save';
+    await window.hos.settings.save({ gameSaves: saves });
+    const loaded = await window.hos.settings.load();
+    const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);   // (key order does not matter)
+    return JSON.stringify(canon(loaded.gameSaves[${JSON.stringify(game)}])) === JSON.stringify(canon(saves[${JSON.stringify(game)}])) ? 'ok' : 'changed by the main process';
+  })()`);
+  const savedOf = (game) => js(`(window.__hos.settings.getSetting('gameSaves') || {})[${JSON.stringify(game)}] || null`);
+
+  // ---- Number Match
+  await launch('nummatch', '.nm-cell');
+  await setBoard(`[3,7,4,4,4,4,4,4,4, 9,9,8,8,8,8,8,8,6, 1,2,3,4,5,6,7,8,9]`, 4);
+  r = await cellRect(0); await click(r.x, r.y);
+  r = await cellRect(1); await click(r.x, r.y);
+  const nmBefore = await app('nummatch', `st.game.cells.join('')`);
+  await closeAll();
+  check('saves: Number Match is saved when the window closes', (await savedOf('nummatch')) !== null && (await survives('nummatch')) === 'ok');
+  await launch('nummatch', '.nm-cell');
+  check('saves: Number Match comes back exactly as it was', (await app('nummatch', `st.game.cells.join('') === ${JSON.stringify(nmBefore)} && st.game.score === 10 && st.game.adds === 4`)) && (await js(`document.querySelectorAll('.win.is-focused .nm-cell').length`)) === 27);
+  await setBoard(`[4,6,0,0,0,0,0,0,0]`, 0);
+  r = await cellRect(0); await click(r.x, r.y);
+  r = await cellRect(1); await click(r.x, r.y);
+  await waitFor(`!!document.querySelector('.win.is-focused .gk-win')`);
+  await closeAll();
+  check('saves: a finished Number Match is not kept (the next one is fresh)', (await savedOf('nummatch')) === null);
+
+  // ---- Tulip Sweep
+  await launch('sweep', '.sw-cell');
+  await withRng(`window.__hos.apps.sweep._api.newGame('medium', true, makeRng(13)); return 0;`);
+  r = await rectOf('.win.is-focused .sw-cell[data-i="120"]');
+  await click(r.x, r.y);
+  const sweepHidden = await app('sweep', `[...st.field.state].findIndex((s) => s === 0)`);
+  r = await rectOf(`.win.is-focused .sw-cell[data-i="${sweepHidden}"]`);
+  await click(r.x, r.y, 'right');
+  await sleep(1300);
+  const swBefore = await app('sweep', `({ opened: st.field.opened, state: Array.from(st.field.state).join(''), mines: Array.from(st.field.hasMine).join(''), flags: st.field.flags })`);
+  await closeAll();
+  check('saves: Tulip Sweep is saved when the window closes', (await savedOf('sweep')) !== null && (await survives('sweep')) === 'ok');
+  await launch('sweep', '.sw-cell');
+  const swAfter = await app('sweep', `({ opened: st.field.opened, state: Array.from(st.field.state).join(''), mines: Array.from(st.field.hasMine).join(''), flags: st.field.flags, level: st.level, elapsed: st.elapsed })`);
+  check('saves: Tulip Sweep comes back with the same thorns, opened cells and flag', swAfter.opened === swBefore.opened && swAfter.state === swBefore.state && swAfter.mines === swBefore.mines && swAfter.flags === 1 && swAfter.level === 'medium');
+  check('saves: and its clock carries on from where it was', swAfter.elapsed >= 1 && (await js(`document.querySelectorAll('.win.is-focused .sw-cell').length`)) === 256 && (await js(`document.querySelectorAll('.win.is-focused .sw-cell.is-flag').length`)) === 1);
+  await snap('99-sweep-restored.png');
+  // a lost game is not kept
+  const swMine = await app('sweep', `st.field.hasMine.findIndex((m, i) => m && st.field.state[i] === 0)`);
+  r = await rectOf(`.win.is-focused .sw-cell[data-i="${swMine}"]`);
+  await click(r.x, r.y);
+  await closeAll();
+  check('saves: a lost Tulip Sweep is not kept', (await savedOf('sweep')) === null);
+
+  // ---- Tulip Merge
+  await launch('merge', '.mg-tile');
+  await js(`window.__hos.apps.merge._api.load([[2,4,8,16],[0,0,0,0],[0,0,0,0],[0,0,64,2]]); window.__hos.apps.merge._state.game.score = 123; window.__hos.apps.merge._api.slide('down'); 0`);
+  await sleep(300);
+  const mgBefore = await app('merge', `JSON.stringify(st.game.tiles.map((t) => [t.r, t.c, t.v]).sort())`);
+  const mgScore = await app('merge', `st.game.score`);
+  await closeAll();
+  check('saves: Tulip Merge is saved when the window closes', (await savedOf('merge')) !== null && (await survives('merge')) === 'ok');
+  await launch('merge', '.mg-tile');
+  check('saves: Tulip Merge comes back with the same tiles and score', (await app('merge', `JSON.stringify(st.game.tiles.map((t) => [t.r, t.c, t.v]).sort()) === ${JSON.stringify(mgBefore)} && st.game.score === ${mgScore}`)) && (await js(`document.querySelectorAll('.win.is-focused .mg-tile').length`)) === (await app('merge', `st.game.tiles.length`)));
+  await snap('100-merge-restored.png');
+  await js(`window.__hos.apps.merge._api.load([[2,4,2,4],[4,2,4,2],[2,4,2,4],[2,2,8,16]]); 0`);
+  await app('merge', `(st.rng = () => 0.5, 0)`);
+  await key('Left');
+  await waitFor(`!!document.querySelector('.win.is-focused .gk-win')`);
+  await closeAll();
+  check('saves: a finished (stuck) Tulip Merge is not kept', (await savedOf('merge')) === null);
+
+  // ---- Snake
+  await launch('snake', '.sn-canvas');
+  await withRng(`window.__hos.apps.snake._api.newGame(makeRng(4)); return 0;`);
+  await key('Right');
+  await app('snake', `(st.game.food = { x: st.game.snake[0].x + 2, y: st.game.snake[0].y }, 0)`);
+  await waitFor(`window.__hos.apps.snake._state.game.score >= 10`, 3000);
+  await key('Down');
+  await sleep(150);
+  await js(`window.__hos.apps.snake._api.pause(); 0`);        // (a step may happen at any moment, so stop the clock before taking the picture)
+  const snBefore = await app('snake', `JSON.stringify({ s: st.game.snake, d: st.game.dir, sc: st.game.score })`);
+  await closeAll();
+  check('saves: Snake is saved when the window closes', (await savedOf('snake')) !== null && (await survives('snake')) === 'ok');
+  await launch('snake', '.sn-canvas');
+  const snAfter = await app('snake', `JSON.stringify({ s: st.game.snake, d: st.game.dir, sc: st.game.score })`);
+  check('saves: Snake comes back where it was, paused (no step happened while it was closed)', snAfter === snBefore && (await app('snake', `st.mode`)) === 'paused' && !(await app('snake', `window.__hos.apps.snake._api.hasClock()`)));
+  await snap('101-snake-restored.png');
+  await key('Space');
+  check('saves: Space continues the restored Snake', (await app('snake', `st.mode`)) === 'running');
+  await app('snake', `(st.game.snake = [{ x: st.game.cols - 1, y: 3 }, { x: st.game.cols - 2, y: 3 }, { x: st.game.cols - 3, y: 3 }], st.game.dir = 'right', st.game.queue = [], 0)`);
+  await waitFor(`window.__hos.apps.snake._state.mode === 'over'`, 3000);
+  await closeAll();
+  check('saves: a finished Snake game is not kept', (await savedOf('snake')) === null);
+
+  // ---- Memory
+  await launch('memory', '.mm-card');
+  await withRng(`window.__hos.apps.memory._api.newGame('easy', true, makeRng(6)); return 0;`);
+  const mmDeck = await app('memory', `Array.from(st.game.deck)`);
+  const mmPair = mmDeck.findIndex((s, j) => j > 0 && s === mmDeck[0]);
+  await js(`window.__hos.apps.memory._api.flip(0); window.__hos.apps.memory._api.flip(${mmPair}); 0`);
+  await sleep(1200);
+  const mmBefore = await app('memory', `({ moves: st.game.moves, state: Array.from(st.game.state).join(''), deck: Array.from(st.game.deck).join('') })`);
+  await closeAll();
+  check('saves: Memory is saved when the window closes', (await savedOf('memory')) !== null && (await survives('memory')) === 'ok');
+  await launch('memory', '.mm-card');
+  const mmAfter = await app('memory', `({ moves: st.game.moves, state: Array.from(st.game.state).join(''), deck: Array.from(st.game.deck).join(''), matched: st.game.matched, level: st.level, elapsed: st.elapsed })`);
+  check('saves: Memory comes back with the same cards, the found pair and the move count', mmAfter.deck === mmBefore.deck && mmAfter.state === mmBefore.state && mmAfter.moves === mmBefore.moves && mmAfter.matched === 1 && mmAfter.level === 'easy' && (await js(`document.querySelectorAll('.win.is-focused .mm-card.is-matched').length`)) === 2);
+  await snap('102-memory-restored.png');
+  await closeAll();
+
+  // ---- Tulip Bloom
+  await launch('bloom', '.bl-cell');
+  await withRng(`window.__hos.apps.bloom._api.newGame('medium', true, makeRng(8)); return 0;`);
+  await js(`window.__hos.apps.bloom._api.press(6); window.__hos.apps.bloom._api.press(12); window.__hos.apps.bloom._api.hint(); 0`);
+  const blBefore = await app('bloom', `({ board: Array.from(st.puzzle.board).join(''), start: Array.from(st.puzzle.start).join(''), presses: st.presses, hints: st.hints })`);
+  await closeAll();
+  check('saves: Tulip Bloom is saved when the window closes', (await savedOf('bloom')) !== null && (await survives('bloom')) === 'ok');
+  await launch('bloom', '.bl-cell');
+  const blAfter = await app('bloom', `({ board: Array.from(st.puzzle.board).join(''), start: Array.from(st.puzzle.start).join(''), presses: st.presses, hints: st.hints, size: st.size })`);
+  check('saves: Tulip Bloom comes back with the same garden, presses and hints', blAfter.board === blBefore.board && blAfter.start === blBefore.start && blAfter.presses === 2 && blAfter.hints === 1 && blAfter.size === 'medium');
+  await clickOn('.win.is-focused .gk-foot .btn', 'Reset');
+  check('saves: Reset still goes back to the real starting position after a restore', (await app('bloom', `Array.from(st.puzzle.board).join('') === ${JSON.stringify(blBefore.start)}`)));
+  await snap('103-bloom-restored.png');
+  await closeAll();
+
+  // ---- Chess
+  await launch('chess', '.ch-board');
+  await js(`window.__hos.apps.chess._api.setMode('two'); 0`);
+  await js(`(() => { const c = window.__hos.apps.chess; c._api.commit({ from: 'e2', to: 'e4' }); c._api.commit({ from: 'e7', to: 'e5' }); c._api.commit({ from: 'g1', to: 'f3' }); return 0; })()`);
+  await closeAll();
+  check('saves: Chess is saved when the window closes', (await savedOf('chess')) !== null && (await survives('chess')) === 'ok');
+  await launch('chess', '.ch-board');
+  check('saves: Chess comes back with the same moves, mode and side to move', (await js(`window.__hos.apps.chess._game.history().join(' ')`)) === 'e4 e5 Nf3' && (await js(`window.__hos.apps.chess._state.mode`)) === 'two' && (await js(`document.querySelector('.win.is-focused .ch-select').value`)) === 'two');
+  await snap('104-chess-restored.png');
+  await js(`(() => { const c = window.__hos.apps.chess; c._api.setMode('ai'); return 0; })()`);
+  await closeAll();
+  check('saves: a Chess game with no moves yet is not kept', (await savedOf('chess')) === null);
+  // a damaged save never breaks a game: it just starts fresh
+  await js(`window.__hos.settings.setSetting('gameSaves', { chess: { pgn: 'this is not chess', mode: 'two', human: 'w', colorChoice: 'w', level: 3, flipped: false }, snake: { speed: 'fast' }, sweep: { level: 'easy' }, nummatch: { cells: 5 } }); 0`);
+  check('saves: a broken Chess save starts a fresh game', await launch('chess', '.ch-board') && (await js(`window.__hos.apps.chess._game.history().length`)) === 0);
+  check('saves: a broken Snake / Sweep / Number Match save starts fresh games too', await launch('snake', '.sn-canvas') && await launch('sweep', '.sw-cell') && await launch('nummatch', '.nm-cell') && (await js(`document.querySelectorAll('.win.is-focused .nm-cell').length`)) === 27);
+  await closeAll();
+  await js(`window.__hos.settings.setSetting('gameSaves', {}); 0`);
 
   // ===================================================================== all of them from the Puzzles hub, then dark + purple
   await js(`window.__hos.launch('puzzles'); 0`);

@@ -28,6 +28,8 @@ Chess game you can play against Stockfish, and eight puzzle games.
 | **Tulip Bloom** | A "lights out" puzzle: pressing a tulip flips it and its four neighbours; make the whole garden bloom (4x4, 5x5, 6x6). Hints come from a real solver that always knows the shortest way. Reset, best presses |
 | **Also** | Calculator, Clock (analog clock, timer, stopwatch), Settings, Recycle Bin shortcut, Puzzles hub |
 
+Every game keeps your game in progress and your best scores, so closing the window (or shutting down) never loses them; the game is waiting when you open it again. Finished games are not kept. A game that cannot read its saved game just starts a new one. (Saved games live in `settings.json`; the main process checks each one against that game's own rules, see `mainGameSaves.js`.)
+
 ## Run it
 
 You need [Node.js](https://nodejs.org/) 22 or newer.
@@ -154,7 +156,7 @@ shows up in the Puzzles hub), call its `registerX()` **before** `registerPuzzles
 `tools/test-games.js` can test them. Take any random numbers from a `rng` function
 (`puzzles/rng.js`) so tests can replay the same board. To remember a personal best, call
 `recordBest()` from `puzzles/gameKit.js` and list the game and its records in `GAME_STATS`
-in `mainSettings.js` (the main process drops anything not listed there). Put every colour in
+in `mainSettings.js` (the main process drops anything not listed there). To keep the game in progress too, add a validator for it in `mainGameSaves.js` and use `loadSave()` / `writeSave()`. Put every colour in
 `theme.css`. Stop every timer in `destroy()`.
 
 ## Credits and licences
