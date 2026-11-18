@@ -30,6 +30,9 @@ Chess game you can play against Stockfish, and eight puzzle games.
 
 Every game keeps your game in progress and your best scores, so closing the window (or shutting down) never loses them; the game is waiting when you open it again. Finished games are not kept. A game that cannot read its saved game just starts a new one. (Saved games live in `settings.json`; the main process checks each one against that game's own rules, see `mainGameSaves.js`.)
 
+## Download
+Grab the latest `.exe` from the [Releases page](../../releases/latest): the portable one needs no installation. (It is unsigned, so see the SmartScreen note below.)
+
 ## Run it
 
 You need [Node.js](https://nodejs.org/) 22 or newer.

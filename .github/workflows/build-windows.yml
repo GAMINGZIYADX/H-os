@@ -2,12 +2,17 @@ name: Build Windows exe
 
 # Builds the portable .exe and the installer on a Windows runner and uploads them as an artifact.
 # Run it from the Actions tab ("Run workflow"), on every push to main, or push a tag like v1.0.0.
+# A version tag (v...) also publishes a GitHub Release with the two .exe files as public downloads.
 on:
   push:
     branches: [main]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+
+# The workflow may only read the code, except that the release step needs to create a Release.
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -49,3 +54,12 @@ jobs:
             dist/*-portable.exe
             dist/*-Setup-*.exe
           if-no-files-found: error
+
+      # Only for version tags (v1.0.0, v1.1.0, ...): create the Release and attach the downloads.
+      - name: Publish the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/*-portable.exe dist/*-Setup-*.exe             --title "H-os ${{ github.ref_name }}" --notes-file .github/release-notes.md
